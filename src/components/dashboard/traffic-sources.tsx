@@ -11,6 +11,7 @@ interface TrafficSourcesProps {
 
 const BAR_COLORS: Record<TrafficSource, string> = {
   google: "bg-brand-500",
+  google_maps: "bg-teal-500",
   instagram: "bg-violet-500",
   facebook: "bg-sky-500",
   directo: "bg-emerald-500",

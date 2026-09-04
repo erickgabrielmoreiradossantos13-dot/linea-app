@@ -2,14 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users2, LayoutTemplate } from "lucide-react";
+import {
+  Home,
+  Target,
+  Users2,
+  Search,
+  LayoutTemplate,
+  ListChecks,
+  FileBarChart2,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineaLogo } from "@/components/ui/logo";
 
 export const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/leads", label: "Leads", icon: Users2, exact: false },
-  { href: "/dashboard/website", label: "Sitio web", icon: LayoutTemplate, exact: false },
+  { href: "/dashboard", label: "Inicio", icon: Home, exact: true },
+  { href: "/dashboard/opportunities", label: "Oportunidades", icon: Target, exact: false },
+  { href: "/dashboard/leads", label: "Contactos", icon: Users2, exact: false },
+  { href: "/dashboard/google", label: "Google", icon: Search, exact: false },
+  { href: "/dashboard/website", label: "Web", icon: LayoutTemplate, exact: false },
+  { href: "/dashboard/plan", label: "Plan de mejora", icon: ListChecks, exact: false },
+  { href: "/dashboard/reports", label: "Informes", icon: FileBarChart2, exact: false },
+  { href: "/dashboard/settings", label: "Configuración", icon: Settings, exact: false },
 ];
 
 export function Sidebar() {

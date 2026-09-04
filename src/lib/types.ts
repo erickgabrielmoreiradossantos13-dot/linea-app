@@ -2,7 +2,15 @@ export type LeadSource = "whatsapp" | "formulario" | "llamada";
 
 export type LeadStatus = "nuevo" | "contactado" | "cita" | "ganado" | "perdido";
 
-export type TrafficSource = "google" | "instagram" | "facebook" | "directo" | "referido";
+export type TrafficSource =
+  | "google"
+  | "google_maps"
+  | "instagram"
+  | "facebook"
+  | "directo"
+  | "referido";
+
+export type PlanStatus = "pendiente" | "en_progreso" | "completado";
 
 export interface Business {
   id: string;
@@ -11,6 +19,9 @@ export interface Business {
   slug: string;
   linea_score: number;
   is_demo: boolean;
+  avg_client_value: number | null;
+  close_rate: number;
+  next_review_date: string | null;
   created_at: string;
 }
 
@@ -52,6 +63,16 @@ export interface AnalyticsEvent {
   occurred_at: string;
 }
 
+export interface ImprovementPlanItem {
+  id: string;
+  business_id: string;
+  title: string;
+  status: PlanStatus;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cita", "ganado", "perdido"];
 
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
@@ -70,8 +91,15 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
 
 export const TRAFFIC_SOURCE_LABELS: Record<TrafficSource, string> = {
   google: "Google",
+  google_maps: "Google Maps",
   instagram: "Instagram",
   facebook: "Facebook",
   directo: "Directo",
   referido: "Referido",
+};
+
+export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
+  pendiente: "Pendiente",
+  en_progreso: "En progreso",
+  completado: "Completado",
 };

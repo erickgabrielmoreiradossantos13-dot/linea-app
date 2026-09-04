@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { DEMO_BUSINESS, DEMO_EMAIL } from "@/lib/demo/data";
-import { hasDemoSession } from "@/lib/demo/store";
+import { getDemoBusinessOverrides, hasDemoSession } from "@/lib/demo/store";
 import type { Business } from "@/lib/types";
 
 export interface CurrentBusinessContext {
@@ -24,11 +24,13 @@ export async function getCurrentBusiness(): Promise<CurrentBusinessContext> {
       redirect("/login");
     }
 
+    const overrides = await getDemoBusinessOverrides();
+
     return {
       userId: "demo-user",
       userEmail: DEMO_EMAIL,
       role: "admin",
-      business: DEMO_BUSINESS,
+      business: { ...DEMO_BUSINESS, ...overrides },
     };
   }
 

@@ -4,6 +4,7 @@ import type { LeadStatus } from "@/lib/types";
 const SESSION_COOKIE = "linea_demo_session";
 const LEADS_COOKIE = "linea_demo_leads";
 const WEBSITE_COOKIE = "linea_demo_website";
+const BUSINESS_COOKIE = "linea_demo_business";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -75,4 +76,27 @@ export async function setDemoWebsiteOverrides(data: Partial<DemoWebsiteFields>) 
   const current = await getDemoWebsiteOverrides();
   const merged = { ...current, ...data };
   store.set(WEBSITE_COOKIE, JSON.stringify(merged), COOKIE_OPTS);
+}
+
+export interface DemoBusinessFields {
+  avg_client_value: number | null;
+  close_rate: number;
+}
+
+export async function getDemoBusinessOverrides(): Promise<Partial<DemoBusinessFields>> {
+  const store = await cookies();
+  const raw = store.get(BUSINESS_COOKIE)?.value;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Partial<DemoBusinessFields>;
+  } catch {
+    return {};
+  }
+}
+
+export async function setDemoBusinessOverrides(data: Partial<DemoBusinessFields>) {
+  const store = await cookies();
+  const current = await getDemoBusinessOverrides();
+  const merged = { ...current, ...data };
+  store.set(BUSINESS_COOKIE, JSON.stringify(merged), COOKIE_OPTS);
 }

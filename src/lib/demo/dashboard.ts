@@ -1,6 +1,14 @@
 import type { LeadSource, LeadStatus, TrafficSource } from "@/lib/types";
 import type { DashboardMetrics } from "@/lib/dashboard";
-import { DEMO_BUSINESS, DEMO_TOTAL_VISITORS, generateDemoLeads, getDemoTrafficCounts } from "@/lib/demo/data";
+import { computeDelta } from "@/lib/dashboard";
+import {
+  DEMO_BUSINESS,
+  DEMO_PREVIOUS_TOTAL_LEADS,
+  DEMO_PREVIOUS_TOTAL_VISITORS,
+  DEMO_TOTAL_VISITORS,
+  generateDemoLeads,
+  getDemoTrafficCounts,
+} from "@/lib/demo/data";
 import { getDemoLeadOverrides } from "@/lib/demo/store";
 
 export async function getDemoDashboardMetrics(): Promise<DashboardMetrics> {
@@ -21,6 +29,8 @@ export async function getDemoDashboardMetrics(): Promise<DashboardMetrics> {
 
   const opportunities = leads.length;
   const conversionRate = visitors > 0 ? opportunities / visitors : 0;
+  const previousConversionRate =
+    DEMO_PREVIOUS_TOTAL_VISITORS > 0 ? DEMO_PREVIOUS_TOTAL_LEADS / DEMO_PREVIOUS_TOTAL_VISITORS : 0;
 
   const leadsBySource: Record<LeadSource, number> = { whatsapp: 0, formulario: 0, llamada: 0 };
   let potentialValue = 0;
@@ -47,8 +57,14 @@ export async function getDemoDashboardMetrics(): Promise<DashboardMetrics> {
 
   return {
     visitors,
+    visitorsDelta: computeDelta(visitors, DEMO_PREVIOUS_TOTAL_VISITORS),
+    previousVisitors: DEMO_PREVIOUS_TOTAL_VISITORS,
     opportunities,
+    opportunitiesDelta: computeDelta(opportunities, DEMO_PREVIOUS_TOTAL_LEADS),
+    previousOpportunities: DEMO_PREVIOUS_TOTAL_LEADS,
     conversionRate,
+    conversionDelta: computeDelta(conversionRate, previousConversionRate),
+    previousConversionRate,
     potentialValue,
     leadsBySource,
     trafficSources,

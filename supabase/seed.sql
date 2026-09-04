@@ -27,11 +27,17 @@ declare
   v_services text[] := array['Implantes', 'Ortodoncia', 'Estética dental', 'Revisión general', 'Blanqueamiento'];
   v_prices numeric[] := array[450, 300, 180, 60, 90];
   v_statuses text[] := array['nuevo','nuevo','contactado','contactado','cita','ganado','ganado','perdido','nuevo','contactado'];
+  v_statuses_prev text[] := array['ganado','ganado','perdido','contactado','ganado','cita'];
 begin
   -- 1) Negocio demo -----------------------------------------------------
-  insert into public.businesses (name, city, slug, linea_score, is_demo)
-  values ('Clínica Aurora', 'Málaga', 'clinica-aurora', 78, true)
-  on conflict (slug) do update set name = excluded.name, city = excluded.city
+  insert into public.businesses (name, city, slug, linea_score, is_demo, avg_client_value, close_rate, next_review_date)
+  values ('Clínica Aurora', 'Málaga', 'clinica-aurora', 78, true, 550, 0.30, current_date + interval '14 days')
+  on conflict (slug) do update set
+    name = excluded.name,
+    city = excluded.city,
+    avg_client_value = excluded.avg_client_value,
+    close_rate = excluded.close_rate,
+    next_review_date = excluded.next_review_date
   returning id into v_business_id;
 
   -- 2) Usuario demo (idempotente) ---------------------------------------
@@ -92,6 +98,7 @@ begin
   -- 5) Limpiar datos demo previos (para poder re-ejecutar el seed) -------
   delete from public.leads where business_id = v_business_id and is_demo = true;
   delete from public.analytics_events where business_id = v_business_id and is_demo = true;
+  delete from public.improvement_plan_items where business_id = v_business_id and is_demo = true;
 
   -- 6) Analítica: 2.418 visitas en los últimos 30 días --------------------
   -- Distribución de fuentes ponderada (Google > Instagram/Facebook/Directo > Referido)
@@ -101,7 +108,8 @@ begin
     v_business_id,
     'visit',
     case (i % 10)
-      when 0 then 'google' when 1 then 'google' when 2 then 'google'
+      when 0 then 'google' when 1 then 'google'
+      when 2 then 'google_maps'
       when 3 then 'instagram' when 4 then 'instagram'
       when 5 then 'facebook' when 6 then 'facebook'
       when 7 then 'directo' when 8 then 'directo'
@@ -114,6 +122,24 @@ begin
     )::int) + (((i * 37) % 86400) * interval '1 second'),
     true
   from generate_series(1, 2418) as i;
+
+  -- 6b) Analítica del periodo anterior (30-59 días), para poder comparar
+  -- "vs. mes anterior" también en modo Supabase real. ~82% del volumen actual.
+  insert into public.analytics_events (business_id, event_type, source, occurred_at, is_demo)
+  select
+    v_business_id,
+    'visit',
+    case (i % 10)
+      when 0 then 'google' when 1 then 'google'
+      when 2 then 'google_maps'
+      when 3 then 'instagram' when 4 then 'instagram'
+      when 5 then 'facebook' when 6 then 'facebook'
+      when 7 then 'directo' when 8 then 'directo'
+      else 'referido'
+    end,
+    (current_date - (30 + (i % 30))) + (((i * 41) % 86400) * interval '1 second'),
+    true
+  from generate_series(1, 1980) as i;
 
   -- 7) Leads: 83 en total -> 51 WhatsApp, 19 formulario, 13 llamada -------
   insert into public.leads (
@@ -131,5 +157,32 @@ begin
     now() - (greatest(0, 29 - floor(29 * (gs / 83.0)) - (gs % 3)) * interval '1 day') - ((gs * 53) % 86400) * interval '1 second',
     true
   from generate_series(1, 83) as gs;
+
+  -- 7b) Leads del periodo anterior (30-59 días), ~77% del volumen actual,
+  -- ya resueltos en su mayoría (para poder comparar "vs. mes anterior").
+  insert into public.leads (
+    business_id, name, phone, email, service, source, status, value_estimate, created_at, is_demo
+  )
+  select
+    v_business_id,
+    v_names[(gs % array_length(v_names, 1)) + 1] || ' ' || v_surnames[((gs * 11) % array_length(v_surnames, 1)) + 1],
+    '+34 6' || lpad((((gs * 654321) % 100000000))::text, 8, '0'),
+    lower(v_names[(gs % array_length(v_names, 1)) + 1]) || '.' || lower(v_surnames[((gs * 11) % array_length(v_surnames, 1)) + 1]) || 'p' || gs || '@ejemplo.com',
+    v_services[(gs % array_length(v_services, 1)) + 1],
+    case when gs <= 39 then 'whatsapp' when gs <= 54 then 'formulario' else 'llamada' end,
+    v_statuses_prev[(gs % array_length(v_statuses_prev, 1)) + 1],
+    v_prices[(gs % array_length(v_prices, 1)) + 1],
+    (current_date - (30 + (gs % 30))) - ((gs * 29) % 86400) * interval '1 second',
+    true
+  from generate_series(1, 64) as gs;
+
+  -- 8) Plan de mejora: tareas de ejemplo que Línea Sur gestiona para el cliente
+  insert into public.improvement_plan_items (business_id, title, status, position, is_demo)
+  values
+    (v_business_id, 'Mejorar la página de tratamientos', 'completado', 1, true),
+    (v_business_id, 'Optimizar el perfil de Google Negocio', 'completado', 2, true),
+    (v_business_id, 'Crear página "Implantes dentales Málaga"', 'en_progreso', 3, true),
+    (v_business_id, 'Mejorar la conversión en móvil', 'pendiente', 4, true),
+    (v_business_id, 'Añadir reseñas de clientes en la web', 'pendiente', 5, true);
 
 end $$;

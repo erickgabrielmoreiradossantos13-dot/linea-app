@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { LeadsTable } from "@/components/leads/leads-table";
 
 export const metadata: Metadata = {
-  title: "Leads · Línea App",
+  title: "Contactos · Línea App",
 };
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function LeadsPage() {
   return (
     <div>
       <PageHeader
-        title="Leads"
+        title="Contactos"
         description={`${leads.length} contactos recibidos por ${business.name}.`}
       />
       <LeadsTable leads={leads} />

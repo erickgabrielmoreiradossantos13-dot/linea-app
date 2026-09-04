@@ -1,4 +1,13 @@
-import type { Business, Lead, LeadSource, LeadStatus, TrafficSource, WebsiteContent } from "@/lib/types";
+import type {
+  Business,
+  ImprovementPlanItem,
+  Lead,
+  LeadSource,
+  LeadStatus,
+  PlanStatus,
+  TrafficSource,
+  WebsiteContent,
+} from "@/lib/types";
 
 export const DEMO_EMAIL = "demo@lineasur.app";
 export const DEMO_PASSWORD = "LineaDemo2026!";
@@ -10,6 +19,9 @@ export const DEMO_BUSINESS: Business = {
   slug: "clinica-aurora",
   linea_score: 78,
   is_demo: true,
+  avg_client_value: 550,
+  close_rate: 0.3,
+  next_review_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString().slice(0, 10),
   created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(),
 };
 
@@ -56,6 +68,11 @@ const STATUSES: LeadStatus[] = [
 const TOTAL_LEADS = 83;
 const TOTAL_VISITORS = 2418;
 
+// Periodo anterior (30-59 días), mismos totales que supabase/seed.sql, para que
+// las comparaciones "vs. mes anterior" coincidan entre modo demo y modo real.
+const PREVIOUS_TOTAL_VISITORS = 1980;
+const PREVIOUS_TOTAL_LEADS = 64;
+
 function sourceForLead(gs: number): LeadSource {
   if (gs <= 51) return "whatsapp";
   if (gs <= 70) return "formulario";
@@ -64,7 +81,8 @@ function sourceForLead(gs: number): LeadSource {
 
 function trafficSourceForVisit(i: number): TrafficSource {
   const r = i % 10;
-  if (r <= 2) return "google";
+  if (r <= 1) return "google";
+  if (r === 2) return "google_maps";
   if (r <= 4) return "instagram";
   if (r <= 6) return "facebook";
   if (r <= 8) return "directo";
@@ -101,6 +119,7 @@ export function generateDemoLeads(): Lead[] {
 export function getDemoTrafficCounts(): Record<TrafficSource, number> {
   const counts: Record<TrafficSource, number> = {
     google: 0,
+    google_maps: 0,
     instagram: 0,
     facebook: 0,
     directo: 0,
@@ -115,3 +134,74 @@ export function getDemoTrafficCounts(): Record<TrafficSource, number> {
 }
 
 export const DEMO_TOTAL_VISITORS = TOTAL_VISITORS;
+export const DEMO_PREVIOUS_TOTAL_VISITORS = PREVIOUS_TOTAL_VISITORS;
+export const DEMO_PREVIOUS_TOTAL_LEADS = PREVIOUS_TOTAL_LEADS;
+
+// ---------------------------------------------------------------------------
+// Visibilidad en Google — ILUSTRATIVO. No hay integración real con Google
+// Search Console todavía; estos números solo existen en modo demo para poder
+// enseñar cómo se verá la sección una vez conectada. Ver src/lib/google.ts.
+// ---------------------------------------------------------------------------
+export const DEMO_GOOGLE_VISIBILITY = {
+  impressions: 14326,
+  impressionsDelta: 0.18,
+  clicksFromGoogle: 612,
+  topQueries: [
+    "dentista málaga",
+    "implantes dentales málaga",
+    "clínica dental centro málaga",
+    "urgencias dentista málaga",
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Plan de mejora — demo. En modo real proviene de la tabla
+// improvement_plan_items (gestionada por Línea Sur para cada cliente).
+// ---------------------------------------------------------------------------
+export const DEMO_IMPROVEMENT_PLAN: ImprovementPlanItem[] = [
+  {
+    id: "demo-plan-1",
+    business_id: DEMO_BUSINESS.id,
+    title: "Mejorar la página de tratamientos",
+    status: "completado" as PlanStatus,
+    position: 1,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+  },
+  {
+    id: "demo-plan-2",
+    business_id: DEMO_BUSINESS.id,
+    title: "Optimizar el perfil de Google Negocio",
+    status: "completado",
+    position: 2,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 28).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+  },
+  {
+    id: "demo-plan-3",
+    business_id: DEMO_BUSINESS.id,
+    title: 'Crear página "Implantes dentales Málaga"',
+    status: "en_progreso",
+    position: 3,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+  {
+    id: "demo-plan-4",
+    business_id: DEMO_BUSINESS.id,
+    title: "Mejorar la conversión en móvil",
+    status: "pendiente",
+    position: 4,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+  },
+  {
+    id: "demo-plan-5",
+    business_id: DEMO_BUSINESS.id,
+    title: "Añadir reseñas de clientes en la web",
+    status: "pendiente",
+    position: 5,
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+  },
+];
