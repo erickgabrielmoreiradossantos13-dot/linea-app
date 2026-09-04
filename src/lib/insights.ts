@@ -1,7 +1,7 @@
 import type { DashboardMetrics } from "@/lib/dashboard";
 import type { Lead } from "@/lib/types";
 
-export type InsightPriority = "alta" | "mejora" | "seo_demo";
+export type InsightPriority = "alta" | "atencion" | "oportunidad" | "mejora";
 
 export interface OpportunityInsight {
   id: string;
@@ -9,6 +9,10 @@ export interface OpportunityInsight {
   title: string;
   explanation: string;
   recommendation: string;
+  /** Ejemplo ilustrativo (solo modo demo): requiere datos que aún no existen. */
+  illustrative?: boolean;
+  /** Si el insight habla de una página concreta, enlaza a editarla. */
+  editHref?: string;
 }
 
 const STALE_DAYS = 3;
@@ -39,10 +43,11 @@ export function getOpportunityInsights(
       ).toFixed(1)} y ahora ${(metrics.conversionRate * 100).toFixed(1)}.`,
       recommendation:
         "Revisa el formulario de contacto, el botón de WhatsApp y las llamadas a la acción de tu web: pequeños cambios ahí suelen recuperar la conversión.",
+      editHref: "/dashboard/website/edit",
     });
   }
 
-  // 2) Las visitas suben pero las oportunidades no acompañan
+  // 2) Las visitas suben pero las oportunidades no acompañan (a vigilar, no urgente)
   if (
     metrics.visitorsDelta.direction === "up" &&
     metrics.visitorsDelta.percent !== null &&
@@ -51,13 +56,14 @@ export function getOpportunityInsights(
   ) {
     insights.push({
       id: "traffic-not-converting",
-      priority: "alta",
+      priority: "atencion",
       title: "Más visitas, pero no se traducen en más contactos",
       explanation: `Tus visitas subieron un ${Math.round(
         metrics.visitorsDelta.percent * 100
       )}% este mes, pero las oportunidades generadas no crecieron al mismo ritmo.`,
       recommendation:
         "Revisa la velocidad de carga de tu web y si el teléfono, WhatsApp y formulario están bien visibles nada más entrar.",
+      editHref: "/dashboard/website/edit",
     });
   }
 
@@ -108,19 +114,23 @@ export function getDemoSeoInsights(): OpportunityInsight[] {
   return [
     {
       id: "demo-seo-implantes",
-      priority: "seo_demo",
+      priority: "oportunidad",
       title: 'La página "Implantes dentales" convierte poco',
       explanation:
-        'Recibe bastantes visitas pero solo un 0,8% termina contactando (ejemplo ilustrativo: requiere analítica por página, todavía no disponible).',
+        "Recibe bastantes visitas pero solo un 0,8% termina contactando (ejemplo ilustrativo: requiere analítica por página, todavía no disponible).",
       recommendation: "Reforzar el CTA, añadir prueba social (reseñas, casos) y simplificar el formulario.",
+      illustrative: true,
+      editHref: "/dashboard/website/edit",
     },
     {
       id: "demo-seo-urgencias",
-      priority: "seo_demo",
+      priority: "oportunidad",
       title: "Oportunidad SEO: urgencias dentales",
       explanation:
         '312 personas buscaron "dentista urgencias Málaga" pero la web no tiene una página específica para ese servicio (ejemplo ilustrativo: requiere Google Search Console, todavía no conectado).',
       recommendation: "Crear una página dedicada a urgencias dentales.",
+      illustrative: true,
+      editHref: "/dashboard/website/edit",
     },
   ];
 }

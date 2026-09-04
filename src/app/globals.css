@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Design tokens de marca Línea Sur. Fuente de verdad documentada: los mismos
+ * valores existen como paletas de Tailwind (brand, secondary, violet, sky,
+ * teal, emerald, orange, red) para uso en clases utilitarias; estas
+ * variables quedan disponibles para cualquier CSS que necesite el valor
+ * directo (p. ej. SVGs inline de gráficas).
+ */
+:root {
+  --brand-primary: #4640d6;
+  --brand-primary-light: #5b63f0;
+  --brand-secondary: #e2503f;
+  --brand-secondary-light: #ff6b5b;
+  --accent-purple: #7c3aed;
+  --accent-blue: #0284c7;
+  --accent-cyan: #0d9488;
+  --success: #059669;
+  --warning: #ea580c;
+  --danger: #dc2626;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;

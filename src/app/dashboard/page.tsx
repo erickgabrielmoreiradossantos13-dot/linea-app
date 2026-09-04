@@ -40,7 +40,11 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <GreetingHeader businessName={business.name} opportunities={metrics.opportunities} />
+      <GreetingHeader
+        businessName={business.name}
+        opportunities={metrics.opportunities}
+        opportunitiesDelta={metrics.opportunitiesDelta}
+      />
 
       {/* 1. Resultados comerciales */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -58,7 +62,7 @@ export default async function DashboardPage() {
           value={metrics.visitors}
           formatType="number"
           icon={<Users className="h-4 w-4" strokeWidth={2} />}
-          accent="brand"
+          accent="sky"
           delta={metrics.visitorsDelta}
           delay={60}
         />
@@ -77,7 +81,7 @@ export default async function DashboardPage() {
             value={googleVisibility.impressions}
             formatType="number"
             icon={<SearchIcon className="h-4 w-4" strokeWidth={2} />}
-            accent="amber"
+            accent="orange"
             hint="Veces que apareciste en búsquedas"
             delta={{
               percent: googleVisibility.impressionsDelta,
@@ -91,7 +95,7 @@ export default async function DashboardPage() {
             value={0}
             formatType="number"
             icon={<SearchIcon className="h-4 w-4" strokeWidth={2} />}
-            accent="amber"
+            accent="orange"
             notConnected
             notConnectedLabel="Conecta Google en la sección Google"
             delay={180}

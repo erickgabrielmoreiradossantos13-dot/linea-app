@@ -4,13 +4,14 @@ import { LogoutButton } from "./logout-button";
 interface TopbarProps {
   businessName: string;
   userEmail: string | null;
+  isStaff: boolean;
 }
 
-export function Topbar({ businessName, userEmail }: TopbarProps) {
+export function Topbar({ businessName, userEmail, isStaff }: TopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-ink-100 bg-[#fafafa]/80 px-4 backdrop-blur-md sm:px-8">
       <div className="flex items-center gap-3">
-        <MobileNav />
+        <MobileNav isStaff={isStaff} />
       </div>
 
       <div className="flex items-center gap-3">

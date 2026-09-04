@@ -103,3 +103,134 @@ export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
   en_progreso: "En progreso",
   completado: "Completado",
 };
+
+// =========================================================
+// Site / Editable Schema / Editor
+// =========================================================
+
+export type SiteStatus = "draft" | "published";
+
+export interface Site {
+  id: string;
+  business_id: string;
+  name: string;
+  domain: string | null;
+  preview_url: string | null;
+  production_url: string | null;
+  framework: string;
+  status: SiteStatus;
+  last_published_at: string | null;
+  created_at: string;
+}
+
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "rich_text"
+  | "number"
+  | "price"
+  | "image"
+  | "gallery"
+  | "url"
+  | "email"
+  | "phone"
+  | "color"
+  | "select"
+  | "boolean"
+  | "date"
+  | "opening_hours"
+  | "location"
+  | "collection";
+
+export interface SitePage {
+  id: string;
+  site_id: string;
+  slug: string;
+  name: string;
+  position: number;
+}
+
+export interface SiteSection {
+  id: string;
+  page_id: string;
+  key: string;
+  name: string;
+  position: number;
+}
+
+export interface FieldConfig {
+  required?: boolean;
+  maxLength?: number;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  /** Solo para field_type "collection" */
+  itemFields?: { key: string; label: string; type: FieldType }[];
+  maxItems?: number;
+  canCreate?: boolean;
+  canDelete?: boolean;
+  canReorder?: boolean;
+}
+
+export interface SiteField {
+  id: string;
+  section_id: string;
+  key: string;
+  label: string;
+  field_type: FieldType;
+  position: number;
+  config: FieldConfig;
+  editable_by_client: boolean;
+}
+
+export interface SiteFieldValue {
+  field_id: string;
+  draft_value: unknown;
+  published_value: unknown;
+  updated_at: string;
+  published_at: string | null;
+}
+
+export interface SiteCollectionItem {
+  id: string;
+  field_id: string;
+  position: number;
+  draft_data: Record<string, unknown>;
+  published_data: Record<string, unknown> | null;
+  is_hidden: boolean;
+}
+
+export interface SiteChangeLogEntry {
+  id: string;
+  site_id: string;
+  actor_email: string | null;
+  summary: string;
+  created_at: string;
+}
+
+export interface MediaAsset {
+  id: string;
+  business_id: string;
+  storage_path: string;
+  url: string;
+  filename: string;
+  mime_type: string;
+  width: number | null;
+  height: number | null;
+  size_bytes: number | null;
+  created_at: string;
+}
+
+/** El esquema completo de un sitio: páginas → secciones → campos. */
+export interface SiteSchema {
+  site: Site;
+  pages: (SitePage & {
+    sections: (SiteSection & { fields: SiteField[] })[];
+  })[];
+}
+
+/** Esquema + contenido actual (borrador) de cada campo, listo para el editor. */
+export interface SiteContent {
+  schema: SiteSchema;
+  values: Record<string, SiteFieldValue>;
+  collectionItems: Record<string, SiteCollectionItem[]>;
+}

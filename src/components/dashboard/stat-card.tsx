@@ -7,6 +7,7 @@ import { useCountUp } from "@/hooks/use-count-up";
 import type { PeriodDelta } from "@/lib/dashboard";
 
 type FormatType = "number" | "currency" | "percent";
+type Accent = "violet" | "sky" | "emerald" | "orange" | "brand" | "red";
 
 interface StatCardProps {
   label: string;
@@ -14,7 +15,7 @@ interface StatCardProps {
   formatType: FormatType;
   icon: ReactNode;
   hint?: string;
-  accent?: "brand" | "emerald" | "amber" | "violet";
+  accent?: Accent;
   delay?: number;
   /** Comparación vs. el periodo anterior (30 días). Si se omite, no se muestra. */
   delta?: PeriodDelta;
@@ -23,11 +24,37 @@ interface StatCardProps {
   notConnectedLabel?: string;
 }
 
-const accentClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
-  brand: "bg-brand-50 text-brand-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-  amber: "bg-amber-50 text-amber-600",
-  violet: "bg-violet-50 text-violet-600",
+const ACCENT_STYLES: Record<Accent, { wash: string; border: string; icon: string }> = {
+  violet: {
+    wash: "from-violet-500/[0.07] via-violet-500/[0.02]",
+    border: "border-l-violet-400",
+    icon: "bg-violet-500/10 text-violet-600",
+  },
+  sky: {
+    wash: "from-sky-500/[0.07] via-sky-500/[0.02]",
+    border: "border-l-sky-400",
+    icon: "bg-sky-500/10 text-sky-600",
+  },
+  emerald: {
+    wash: "from-emerald-500/[0.07] via-emerald-500/[0.02]",
+    border: "border-l-emerald-400",
+    icon: "bg-emerald-500/10 text-emerald-600",
+  },
+  orange: {
+    wash: "from-orange-500/[0.07] via-orange-500/[0.02]",
+    border: "border-l-orange-400",
+    icon: "bg-orange-500/10 text-orange-600",
+  },
+  brand: {
+    wash: "from-brand-500/[0.07] via-brand-500/[0.02]",
+    border: "border-l-brand-400",
+    icon: "bg-brand-500/10 text-brand-600",
+  },
+  red: {
+    wash: "from-red-500/[0.07] via-red-500/[0.02]",
+    border: "border-l-red-400",
+    icon: "bg-red-500/10 text-red-600",
+  },
 };
 
 function formatValue(value: number, type: FormatType) {
@@ -68,18 +95,23 @@ export function StatCard({
   notConnectedLabel = "Aún no conectado",
 }: StatCardProps) {
   const animated = useCountUp(notConnected ? 0 : value);
+  const style = ACCENT_STYLES[accent];
 
   return (
     <div
-      className="group animate-fade-in-up rounded-2xl border border-ink-100 bg-white p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover"
+      className={cn(
+        "group animate-fade-in-up rounded-2xl border border-ink-100 border-l-[3px] bg-gradient-to-br to-white to-60% p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover",
+        style.wash,
+        style.border
+      )}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between">
         <p className="text-sm font-medium text-ink-500">{label}</p>
         <div
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110",
-            accentClasses[accent]
+            "flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 group-hover:rotate-3",
+            style.icon
           )}
         >
           {icon}

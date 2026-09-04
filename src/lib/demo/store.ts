@@ -3,8 +3,9 @@ import type { LeadStatus } from "@/lib/types";
 
 const SESSION_COOKIE = "linea_demo_session";
 const LEADS_COOKIE = "linea_demo_leads";
-const WEBSITE_COOKIE = "linea_demo_website";
 const BUSINESS_COOKIE = "linea_demo_business";
+const SITE_COOKIE = "linea_demo_site";
+const SITE_LOG_COOKIE = "linea_demo_site_log";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -46,36 +47,60 @@ export async function setDemoLeadOverride(leadId: string, status: LeadStatus) {
   store.set(LEADS_COOKIE, JSON.stringify(current), COOKIE_OPTS);
 }
 
-export interface DemoWebsiteFields {
-  headline: string;
-  description: string;
-  cta_text: string;
-  phone: string;
-  whatsapp: string;
-  published_headline: string;
-  published_description: string;
-  published_cta_text: string;
-  published_phone: string;
-  published_whatsapp: string;
-  published_at: string;
+export interface DemoSiteOverrides {
+  draft: Record<string, string>;
+  published: Record<string, string>;
+  lastPublishedAt: string | null;
 }
 
-export async function getDemoWebsiteOverrides(): Promise<Partial<DemoWebsiteFields>> {
+export async function getDemoSiteOverrides(): Promise<DemoSiteOverrides> {
   const store = await cookies();
-  const raw = store.get(WEBSITE_COOKIE)?.value;
-  if (!raw) return {};
+  const raw = store.get(SITE_COOKIE)?.value;
+  const fallback: DemoSiteOverrides = { draft: {}, published: {}, lastPublishedAt: null };
+  if (!raw) return fallback;
   try {
-    return JSON.parse(raw) as Partial<DemoWebsiteFields>;
+    return { ...fallback, ...(JSON.parse(raw) as Partial<DemoSiteOverrides>) };
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-export async function setDemoWebsiteOverrides(data: Partial<DemoWebsiteFields>) {
+export async function setDemoSiteOverrides(patch: {
+  draft?: Record<string, string>;
+  published?: Record<string, string>;
+  lastPublishedAt?: string;
+}) {
   const store = await cookies();
-  const current = await getDemoWebsiteOverrides();
-  const merged = { ...current, ...data };
-  store.set(WEBSITE_COOKIE, JSON.stringify(merged), COOKIE_OPTS);
+  const current = await getDemoSiteOverrides();
+  const merged: DemoSiteOverrides = {
+    draft: { ...current.draft, ...patch.draft },
+    published: { ...current.published, ...patch.published },
+    lastPublishedAt: patch.lastPublishedAt ?? current.lastPublishedAt,
+  };
+  store.set(SITE_COOKIE, JSON.stringify(merged), COOKIE_OPTS);
+}
+
+export interface DemoChangeLogEntry {
+  summary: string;
+  created_at: string;
+}
+
+export async function getDemoSiteChangeLog(): Promise<DemoChangeLogEntry[]> {
+  const store = await cookies();
+  const raw = store.get(SITE_LOG_COOKIE)?.value;
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as DemoChangeLogEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export async function addDemoSiteChangeLogEntry(entry: DemoChangeLogEntry) {
+  const store = await cookies();
+  const current = await getDemoSiteChangeLog();
+  const updated = [entry, ...current].slice(0, 10);
+  store.set(SITE_LOG_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
 }
 
 export interface DemoBusinessFields {

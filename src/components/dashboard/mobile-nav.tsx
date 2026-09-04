@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineaLogo } from "@/components/ui/logo";
-import { NAV_ITEMS } from "./sidebar";
+import { getNavItems } from "./sidebar";
 
-export function MobileNav() {
+export function MobileNav({ isStaff }: { isStaff: boolean }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const items = getNavItems(isStaff);
 
   return (
     <div className="lg:hidden">
@@ -41,7 +42,7 @@ export function MobileNav() {
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-2">
-              {NAV_ITEMS.map((item) => {
+              {items.map((item) => {
                 const isActive = item.exact
                   ? pathname === item.href
                   : pathname.startsWith(item.href);

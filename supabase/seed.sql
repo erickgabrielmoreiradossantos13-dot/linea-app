@@ -28,6 +28,15 @@ declare
   v_prices numeric[] := array[450, 300, 180, 60, 90];
   v_statuses text[] := array['nuevo','nuevo','contactado','contactado','cita','ganado','ganado','perdido','nuevo','contactado'];
   v_statuses_prev text[] := array['ganado','ganado','perdido','contactado','ganado','cita'];
+  v_site_id uuid;
+  v_page_id uuid;
+  v_hero_id uuid;
+  v_contact_id uuid;
+  v_field_title uuid;
+  v_field_subtitle uuid;
+  v_field_cta uuid;
+  v_field_phone uuid;
+  v_field_whatsapp uuid;
 begin
   -- 1) Negocio demo -----------------------------------------------------
   insert into public.businesses (name, city, slug, linea_score, is_demo, avg_client_value, close_rate, next_review_date)
@@ -184,5 +193,64 @@ begin
     (v_business_id, 'Crear página "Implantes dentales Málaga"', 'en_progreso', 3, true),
     (v_business_id, 'Mejorar la conversión en móvil', 'pendiente', 4, true),
     (v_business_id, 'Añadir reseñas de clientes en la web', 'pendiente', 5, true);
+
+  -- 9) Equipo de Línea Sur: el usuario demo también puede ver /dashboard/admin/sites
+  insert into public.linea_staff (user_id)
+  values (v_user_id)
+  on conflict (user_id) do nothing;
+
+  -- 10) Site / Editable Schema: migra el contenido de website_content (los
+  -- mismos 5 campos de siempre) a la nueva arquitectura genérica.
+  delete from public.sites where business_id = v_business_id and is_demo = true;
+
+  insert into public.sites (business_id, name, domain, production_url, framework, status, last_published_at, is_demo)
+  values (v_business_id, 'Clínica Aurora', 'auroraclinica.es', 'https://auroraclinica.es', 'linea-nextjs', 'published', now() - interval '10 days', true)
+  returning id into v_site_id;
+
+  insert into public.site_pages (site_id, slug, name, position)
+  values (v_site_id, 'inicio', 'Inicio', 1)
+  returning id into v_page_id;
+
+  insert into public.site_sections (page_id, key, name, position)
+  values (v_page_id, 'hero', 'Hero', 1)
+  returning id into v_hero_id;
+
+  insert into public.site_sections (page_id, key, name, position)
+  values (v_page_id, 'contact', 'Contacto', 2)
+  returning id into v_contact_id;
+
+  insert into public.site_fields (section_id, key, label, field_type, position, config)
+  values (v_hero_id, 'title', 'Título principal', 'text', 1, jsonb_build_object('maxLength', 80))
+  returning id into v_field_title;
+
+  insert into public.site_fields (section_id, key, label, field_type, position, config)
+  values (v_hero_id, 'subtitle', 'Descripción', 'textarea', 2, jsonb_build_object('maxLength', 280))
+  returning id into v_field_subtitle;
+
+  insert into public.site_fields (section_id, key, label, field_type, position, config)
+  values (v_hero_id, 'ctaLabel', 'Texto del botón', 'text', 3, jsonb_build_object('maxLength', 30))
+  returning id into v_field_cta;
+
+  insert into public.site_fields (section_id, key, label, field_type, position, config)
+  values (v_contact_id, 'phone', 'Teléfono', 'phone', 1, '{}')
+  returning id into v_field_phone;
+
+  insert into public.site_fields (section_id, key, label, field_type, position, config)
+  values (v_contact_id, 'whatsapp', 'WhatsApp', 'phone', 2, '{}')
+  returning id into v_field_whatsapp;
+
+  insert into public.site_field_values (field_id, draft_value, published_value, published_at)
+  select v_field_title, to_jsonb(headline), to_jsonb(published_headline), published_at from public.website_content where business_id = v_business_id
+  union all
+  select v_field_subtitle, to_jsonb(description), to_jsonb(published_description), published_at from public.website_content where business_id = v_business_id
+  union all
+  select v_field_cta, to_jsonb(cta_text), to_jsonb(published_cta_text), published_at from public.website_content where business_id = v_business_id
+  union all
+  select v_field_phone, to_jsonb(phone), to_jsonb(published_phone), published_at from public.website_content where business_id = v_business_id
+  union all
+  select v_field_whatsapp, to_jsonb(whatsapp), to_jsonb(published_whatsapp), published_at from public.website_content where business_id = v_business_id;
+
+  insert into public.site_change_log (site_id, actor_email, summary, created_at)
+  values (v_site_id, 'Línea Sur', 'Sitio conectado a Línea App', now() - interval '10 days');
 
 end $$;

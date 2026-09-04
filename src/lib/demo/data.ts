@@ -6,7 +6,6 @@ import type {
   LeadStatus,
   PlanStatus,
   TrafficSource,
-  WebsiteContent,
 } from "@/lib/types";
 
 export const DEMO_EMAIL = "demo@lineasur.app";
@@ -25,29 +24,8 @@ export const DEMO_BUSINESS: Business = {
   created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(),
 };
 
-const DEMO_WEBSITE_HEADLINE = "Cuida tu sonrisa con los mejores especialistas de Málaga";
-const DEMO_WEBSITE_DESCRIPTION =
-  "En Clínica Aurora combinamos tecnología avanzada y trato cercano para ofrecerte tratamientos dentales de máxima calidad.";
-const DEMO_WEBSITE_CTA = "Pide tu cita";
-const DEMO_WEBSITE_PHONE = "+34 951 234 567";
-const DEMO_WEBSITE_WHATSAPP = "+34 611 222 333";
-
-export const DEMO_WEBSITE_CONTENT: WebsiteContent = {
-  id: "demo-website-clinica-aurora",
-  business_id: DEMO_BUSINESS.id,
-  headline: DEMO_WEBSITE_HEADLINE,
-  description: DEMO_WEBSITE_DESCRIPTION,
-  cta_text: DEMO_WEBSITE_CTA,
-  phone: DEMO_WEBSITE_PHONE,
-  whatsapp: DEMO_WEBSITE_WHATSAPP,
-  published_headline: DEMO_WEBSITE_HEADLINE,
-  published_description: DEMO_WEBSITE_DESCRIPTION,
-  published_cta_text: DEMO_WEBSITE_CTA,
-  published_phone: DEMO_WEBSITE_PHONE,
-  published_whatsapp: DEMO_WEBSITE_WHATSAPP,
-  updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-  published_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-};
+// El contenido de la web ahora vive en el esquema genérico de sitios
+// (ver src/lib/demo/site.ts), no en un objeto de forma fija.
 
 // Mismos parámetros deterministas que supabase/seed.sql, para que el modo
 // demo (sin base de datos) muestre datos con la misma forma que el seed real.

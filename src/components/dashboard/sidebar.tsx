@@ -11,6 +11,7 @@ import {
   ListChecks,
   FileBarChart2,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineaLogo } from "@/components/ui/logo";
@@ -26,8 +27,20 @@ export const NAV_ITEMS = [
   { href: "/dashboard/settings", label: "Configuración", icon: Settings, exact: false },
 ];
 
-export function Sidebar() {
+const ADMIN_NAV_ITEM = {
+  href: "/dashboard/admin/sites",
+  label: "Sitios (equipo)",
+  icon: ShieldCheck,
+  exact: false,
+};
+
+export function getNavItems(isStaff: boolean) {
+  return isStaff ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
+}
+
+export function Sidebar({ isStaff }: { isStaff: boolean }) {
   const pathname = usePathname();
+  const items = getNavItems(isStaff);
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-ink-100 bg-white/70 backdrop-blur-sm lg:flex">
@@ -36,7 +49,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-2">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);
@@ -53,6 +66,9 @@ export function Sidebar() {
                   : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
               )}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-brand-400 to-secondary-500" />
+              )}
               <Icon
                 className={cn(
                   "h-4 w-4 transition-transform duration-200",
