@@ -15,10 +15,10 @@ export default function LoginPage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-brand-200/40 blur-[110px]"
+        className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-brand-200/40 blur-[110px] animate-pulse-soft"
       />
 
-      <div className="relative w-full max-w-[380px]">
+      <div className="relative w-full max-w-[380px] animate-fade-in-up">
         <div className="mb-8 flex justify-center">
           <LineaLogo />
         </div>

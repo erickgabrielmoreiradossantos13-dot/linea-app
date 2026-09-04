@@ -79,12 +79,12 @@ export function WebsiteEditor({ businessId, businessName, content }: WebsiteEdit
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <div className="rounded-2xl border border-ink-100 bg-white p-6 shadow-card">
+      <div className="animate-fade-in-up rounded-2xl border border-ink-100 bg-white p-6 shadow-card">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs">
             {hasUnpublishedChanges ? (
               <>
-                <CircleDot className="h-3.5 w-3.5 text-amber-500" />
+                <CircleDot className="h-3.5 w-3.5 animate-pulse text-amber-500" />
                 <span className="text-ink-500">Cambios sin publicar</span>
               </>
             ) : (
@@ -155,13 +155,14 @@ export function WebsiteEditor({ businessId, businessName, content }: WebsiteEdit
 
         {feedback && (
           <p
-            className={`mt-4 text-sm ${
+            className={`mt-4 animate-fade-in-up text-sm ${
               feedback.type === "success" ? "text-emerald-600" : "text-red-600"
             }`}
           >
             {feedback.message}
           </p>
         )}
+
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Button variant="secondary" onClick={handleSaveDraft} loading={isSavingDraft}>
@@ -173,7 +174,7 @@ export function WebsiteEditor({ businessId, businessName, content }: WebsiteEdit
         </div>
       </div>
 
-      <div>
+      <div className="animate-fade-in-up" style={{ animationDelay: "80ms" }}>
         <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-400">
           Vista previa
         </p>

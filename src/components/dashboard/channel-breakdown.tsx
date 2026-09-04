@@ -18,9 +18,11 @@ export function ChannelBreakdown({ data }: ChannelBreakdownProps) {
       {CHANNELS.map(({ key, label, icon: Icon, color }) => (
         <div
           key={key}
-          className="flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/40 px-4 py-3.5"
+          className="group flex items-center gap-3 rounded-xl border border-ink-100 bg-ink-50/40 px-4 py-3.5 transition-all duration-200 hover:border-ink-200 hover:bg-white hover:shadow-card"
         >
-          <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 ${color}`}
+          >
             <Icon className="h-4 w-4" strokeWidth={2} />
           </div>
           <div>

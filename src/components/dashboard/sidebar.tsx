@@ -33,13 +33,19 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
                 isActive
                   ? "bg-ink-900 text-white shadow-sm"
                   : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
               )}
             >
-              <Icon className="h-4 w-4" strokeWidth={2} />
+              <Icon
+                className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  !isActive && "group-hover:scale-110"
+                )}
+                strokeWidth={2}
+              />
               {item.label}
             </Link>
           );

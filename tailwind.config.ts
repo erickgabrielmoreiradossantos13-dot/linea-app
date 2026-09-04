@@ -43,11 +43,26 @@ const config: Config = {
       },
       boxShadow: {
         card: "0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 6px -1px rgb(0 0 0 / 0.04)",
+        "card-hover": "0 2px 6px -1px rgb(0 0 0 / 0.05), 0 8px 24px -4px rgb(0 0 0 / 0.08)",
         popover: "0 10px 40px -10px rgb(0 0 0 / 0.15)",
       },
       borderRadius: {
         xl: "0.875rem",
         "2xl": "1.25rem",
+      },
+      keyframes: {
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        pulseSoft: {
+          "0%, 100%": { opacity: "0.4", transform: "scale(1)" },
+          "50%": { opacity: "0.6", transform: "scale(1.04)" },
+        },
+      },
+      animation: {
+        "fade-in-up": "fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "pulse-soft": "pulseSoft 6s ease-in-out infinite",
       },
     },
   },

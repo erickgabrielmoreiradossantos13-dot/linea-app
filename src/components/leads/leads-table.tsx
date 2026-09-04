@@ -21,7 +21,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card">
+    <div className="animate-fade-in-up overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead>
@@ -37,7 +37,10 @@ export function LeadsTable({ leads }: LeadsTableProps) {
           </thead>
           <tbody className="divide-y divide-ink-100">
             {leads.map((lead) => (
-              <tr key={lead.id} className="transition-colors hover:bg-ink-50/40">
+              <tr
+                key={lead.id}
+                className="transition-all duration-150 hover:bg-ink-50/60 hover:shadow-[inset_3px_0_0_0_#5b63f0]"
+              >
                 <td className="whitespace-nowrap px-5 py-3.5 font-medium text-ink-900">
                   {lead.name}
                 </td>

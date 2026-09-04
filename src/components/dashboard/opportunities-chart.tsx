@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatDateShort } from "@/lib/utils";
 
 interface OpportunitiesChartProps {
@@ -31,10 +31,11 @@ export function OpportunitiesChart({ data }: OpportunitiesChartProps) {
       <AreaChart data={data} margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
         <defs>
           <linearGradient id="opportunitiesGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#5b63f0" stopOpacity={0.28} />
+            <stop offset="0%" stopColor="#5b63f0" stopOpacity={0.3} />
             <stop offset="100%" stopColor="#5b63f0" stopOpacity={0} />
           </linearGradient>
         </defs>
+        <CartesianGrid vertical={false} stroke="#eeeef0" strokeDasharray="4 4" />
         <XAxis
           dataKey="date"
           tickFormatter={formatDateShort}
@@ -50,13 +51,16 @@ export function OpportunitiesChart({ data }: OpportunitiesChartProps) {
           width={28}
           allowDecimals={false}
         />
-        <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#d9d9de", strokeDasharray: 4 }} />
+        <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#c3caff", strokeDasharray: 4 }} />
         <Area
           type="monotone"
           dataKey="count"
           stroke="#4640d6"
-          strokeWidth={2}
+          strokeWidth={2.25}
           fill="url(#opportunitiesGradient)"
+          activeDot={{ r: 5, stroke: "#ffffff", strokeWidth: 2 }}
+          animationDuration={900}
+          animationEasing="ease-out"
         />
       </AreaChart>
     </ResponsiveContainer>

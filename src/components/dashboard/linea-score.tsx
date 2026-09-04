@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 interface LineaScoreProps {
   score: number;
 }
@@ -13,8 +17,34 @@ export function LineaScore({ score }: LineaScoreProps) {
   const clamped = Math.min(100, Math.max(0, score));
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - clamped / 100);
   const { stroke, text, label } = getScoreColor(clamped);
+
+  const [progress, setProgress] = useState(0);
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setProgress(clamped));
+
+    const duration = 900;
+    let animFrame = 0;
+    let start: number | null = null;
+
+    function step(timestamp: number) {
+      if (start === null) start = timestamp;
+      const t = Math.min((timestamp - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplayScore(Math.round(clamped * eased));
+      if (t < 1) animFrame = requestAnimationFrame(step);
+    }
+    animFrame = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      cancelAnimationFrame(animFrame);
+    };
+  }, [clamped]);
+
+  const offset = circumference * (1 - progress / 100);
 
   return (
     <div className="flex flex-col items-center justify-center py-2">
@@ -31,11 +61,13 @@ export function LineaScore({ score }: LineaScoreProps) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 0.6s ease" }}
+            style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1)" }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-semibold tracking-tight text-ink-900">{clamped}</span>
+          <span className="text-3xl font-semibold tracking-tight tabular-nums text-ink-900">
+            {displayScore}
+          </span>
           <span className="text-xs text-ink-400">sobre 100</span>
         </div>
       </div>

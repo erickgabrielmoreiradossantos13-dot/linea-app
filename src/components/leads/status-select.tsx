@@ -41,7 +41,7 @@ export function StatusSelect({ leadId, status }: StatusSelectProps) {
       disabled={isPending}
       onChange={(e) => handleChange(e.target.value as LeadStatus)}
       className={cn(
-        "cursor-pointer rounded-full border px-3 py-1 text-xs font-medium outline-none transition-opacity disabled:cursor-wait disabled:opacity-60",
+        "cursor-pointer rounded-full border px-3 py-1 text-xs font-medium outline-none transition-all duration-150 hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand-200 disabled:cursor-wait disabled:opacity-60",
         STATUS_STYLES[current]
       )}
     >
