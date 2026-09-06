@@ -24,6 +24,8 @@ export interface SiteAdapter {
   discardDraft(siteId: string): Promise<void>;
   publish(siteId: string, actorEmail: string | null): Promise<void>;
   getChangeLog(siteId: string): Promise<SiteChangeLogEntry[]>;
+  /** Carga el snapshot de una publicación anterior como BORRADOR (no toca lo publicado). */
+  restoreVersion(siteId: string, snapshot: Record<string, unknown>): Promise<void>;
 }
 
 async function getSchema(siteId: string): Promise<SiteSchema | null> {
@@ -153,14 +155,34 @@ async function realPublish(siteId: string, actorEmail: string | null): Promise<v
 
   await supabase.from("sites").update({ status: "published", last_published_at: now }).eq("id", siteId);
 
+  const snapshot: Record<string, unknown> = {};
+  for (const value of Object.values(content.values)) {
+    snapshot[value.field_id] = value.draft_value;
+  }
+
   const pageName = content.schema.pages[0]?.name ?? "el sitio";
   await supabase.from("site_change_log").insert({
     site_id: siteId,
     actor_email: actorEmail,
     summary: `${actorEmail ?? "Alguien"} publicó cambios en ${pageName}`,
+    snapshot,
   });
 
   revalidatePath("/dashboard/website");
+}
+
+async function realRestoreVersion(_siteId: string, snapshot: Record<string, unknown>): Promise<void> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  await Promise.all(
+    Object.entries(snapshot).map(([fieldId, value]) =>
+      supabase
+        .from("site_field_values")
+        .update({ draft_value: value, updated_at: now })
+        .eq("field_id", fieldId)
+    )
+  );
 }
 
 async function realGetChangeLog(siteId: string): Promise<SiteChangeLogEntry[]> {
@@ -192,6 +214,7 @@ const realAdapter: SiteAdapter = {
   discardDraft: realDiscardDraft,
   publish: realPublish,
   getChangeLog: realGetChangeLog,
+  restoreVersion: realRestoreVersion,
 };
 
 function currentAdapter(): SiteAdapter {
@@ -220,4 +243,8 @@ export async function publishSite(siteId: string, actorEmail: string | null) {
 
 export async function getSiteChangeLog(siteId: string) {
   return currentAdapter().getChangeLog(siteId);
+}
+
+export async function restoreSiteVersion(siteId: string, snapshot: Record<string, unknown>) {
+  return currentAdapter().restoreVersion(siteId, snapshot);
 }

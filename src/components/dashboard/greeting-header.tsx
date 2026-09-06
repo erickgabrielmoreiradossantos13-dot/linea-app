@@ -31,12 +31,14 @@ interface GreetingHeaderProps {
   businessName: string;
   opportunities: number;
   opportunitiesDelta: PeriodDelta;
+  isDemo?: boolean;
 }
 
 export function GreetingHeader({
   businessName,
   opportunities,
   opportunitiesDelta,
+  isDemo = false,
 }: GreetingHeaderProps) {
   const status = getPerformanceStatus(opportunitiesDelta);
 
@@ -54,6 +56,14 @@ export function GreetingHeader({
         <span className="rounded-full bg-ink-100 px-2.5 py-0.5 text-[11px] font-medium text-ink-500">
           Últimos 30 días
         </span>
+        {isDemo && (
+          <span
+            className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700"
+            title="Los datos que ves aquí son ilustrativos, no de un negocio real."
+          >
+            Datos de demostración
+          </span>
+        )}
       </div>
 
       <p className="relative mt-1.5 text-[15px] leading-relaxed text-ink-500">

@@ -52,6 +52,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
      fuente de tráfico, y la tabla del Plan de mejora)
    - `supabase/migrations/0004_sites_editor.sql` (Site / Editable Schema / editor por
      secciones, equipo interno de Línea Sur, y el bucket de Storage para imágenes)
+   - `supabase/migrations/0005_v0_1.sql` (Plan de mejora enriquecido, Solicitudes/soporte,
+     atribución básica de leads y snapshot de publicación para restaurar versiones)
 
    También puedes usar la Supabase CLI si la tienes instalada:
 
@@ -74,7 +76,10 @@ Esto crea:
 - Contenido de la web, ~2.418 visitas y 83 leads del periodo actual (últimos 30 días),
   más un segundo lote más pequeño en el periodo anterior (30-59 días) para que las
   comparaciones "vs. mes anterior" funcionen también en modo Supabase real.
-- 5 tareas de ejemplo en el Plan de mejora, con los tres estados posibles.
+- 5 tareas de ejemplo en el Plan de mejora, con categoría, prioridad, impacto y los
+  cinco estados del flujo (Recomendado/Planificado/En progreso/Completado/Descartado).
+- 3 solicitudes de ejemplo en Solicitudes, en distintos estados.
+- Atribución básica (fuente de tráfico, página de aterrizaje) en cada lead de ejemplo.
 - El **sitio** de Clínica Aurora en la nueva arquitectura de Editable Schema (página
   "Inicio" → secciones "Hero" y "Contacto" con sus campos), con el mismo contenido que
   antes tenía `website_content`. El usuario demo se añade también a `linea_staff` para
@@ -106,14 +111,15 @@ Abre [http://localhost:3000](http://localhost:3000) e inicia sesión con el usua
 |---|---|
 | `businesses` | Negocios (tenants). Incluye `linea_score`, y la configuración de valor comercial (`avg_client_value`, `close_rate`, `next_review_date`). |
 | `business_members` | Relación usuario ↔ negocio, con rol `client` o `admin`. |
-| `leads` | Contactos recibidos (WhatsApp, formulario, llamada) con estado del embudo. |
+| `leads` | Contactos recibidos (WhatsApp, formulario, llamada) con estado del embudo, más atribución básica (`traffic_source`, `traffic_medium`, `campaign`, `landing_page`, `referrer`). |
 | `website_content` | Contenido editable de la web (borrador + última publicación). |
 | `analytics_events` | Visitas registradas, con su fuente de tráfico (incluye `google_maps`). |
-| `improvement_plan_items` | Tareas del Plan de mejora que Línea Sur gestiona para cada cliente (el cliente solo lee). |
+| `improvement_plan_items` | Tareas del Plan de mejora que Línea Sur gestiona para cada cliente (el cliente solo lee). Incluye `category`, `priority`, `description`, `impact`, `target_date` y `result`. |
+| `support_requests` | Solicitudes que el cliente envía a Línea Sur (cambio de contenido, nueva sección, problema técnico...). El cliente crea y lee las suyas; solo `linea_staff` cambia el estado o añade `response_notes`. |
 | `sites` | Un sitio web conectado a Línea App (uno o varios por negocio). |
 | `site_pages` / `site_sections` / `site_fields` | El **Editable Schema**: qué páginas, secciones y campos existen, de qué tipo, y si el cliente puede editarlos (`editable_by_client`). Lo define Línea Sur. |
 | `site_field_values` / `site_collection_items` | El contenido en sí (borrador + publicado) de cada campo simple o de cada elemento de una colección (servicios, testimonios...). |
-| `site_change_log` | Historial de cambios de un sitio. |
+| `site_change_log` | Historial de cambios de un sitio, con `snapshot` (valores publicados en ese momento) para poder restaurar una versión anterior como borrador. |
 | `media_assets` | Biblioteca de imágenes de cada negocio (Supabase Storage, bucket `site-media`). |
 | `linea_staff` | Equipo interno de Línea Sur con acceso a `/dashboard/admin/sites` y a todos los negocios. |
 
@@ -128,51 +134,77 @@ de su propio negocio.
 ## Páginas
 
 - `/login` — Inicio de sesión.
-- `/dashboard` (**Inicio**) — Saludo + resumen, 4 KPIs con comparación vs. mes anterior,
-  oportunidades destacadas, evolución (gráfico, acciones comerciales, cómo llegan tus
-  clientes), valor comercial potencial y Línea Score.
-- `/dashboard/opportunities` (**Oportunidades**) — Recomendaciones automáticas (motor de
-  reglas, no IA) generadas a partir de datos reales: conversión a la baja, contactos sin
-  gestionar, crecimiento de oportunidades, etc.
-- `/dashboard/leads` (**Contactos**) — Listado de leads con cambio de estado en línea.
-- `/dashboard/google` (**Google**) — Visibilidad en búsquedas de Google. **Sin
-  integración real todavía**: en modo demo muestra datos ilustrativos claramente
-  marcados; en modo Supabase real muestra un aviso de "aún no conectado" en vez de
-  inventar cifras.
-- `/dashboard/website` (**Web**) — Resumen del sitio conectado (nombre, dominio, estado,
-  última actualización) con accesos a Editar web / Ver web / Vista previa.
+- `/dashboard` (**Inicio**, grupo *Resumen*) — Saludo + badge de "Datos de demostración"
+  cuando corresponde, 4 KPIs con comparación vs. mes anterior y una microexplicación de
+  qué significa cada uno, **"Qué necesita tu atención"** (insights accionables con
+  impacto comercial y CTA a la sección relevante), gráfico de oportunidades, cómo llegan
+  los clientes, acciones comerciales, **"Tu web está evolucionando"** (resumen del Plan
+  de mejora: completado / en progreso / siguiente), valor comercial potencial y Línea
+  Score.
+- `/dashboard/opportunities` (**Oportunidades**, grupo *Resultados*) — Recomendaciones
+  automáticas (motor de reglas, no IA) generadas a partir de datos reales: conversión a
+  la baja, contactos sin gestionar, crecimiento de oportunidades, etc. Cada una enlaza a
+  dónde se puede actuar (Mi Web, Contactos, Informes).
+- `/dashboard/leads` (**Contactos**, grupo *Resultados*) — Listado de leads con filtro por
+  estado (también enlazable por URL, `?status=nuevo`), cambio de estado en línea, ficha
+  de contacto (`/dashboard/leads/[id]`) con acciones Llamar/WhatsApp/Email, y un panel de
+  **atribución básica**: de dónde llegan los contactos y qué página genera más.
+- `/dashboard/google` (**Google**, grupo *Resultados*) — Visibilidad en búsquedas de
+  Google (**sin integración real todavía**: en modo demo muestra datos ilustrativos
+  claramente marcados; en modo Supabase real muestra un aviso de "aún no conectado" en
+  vez de inventar cifras), más checklists reales de **SEO local** y **preparación para
+  IA (GEO)** derivadas del contenido publicado, y las próximas acciones del Plan de
+  mejora relacionadas.
+- `/dashboard/reports` (**Informes**, grupo *Resultados*) — Informe mensual: resultados,
+  oportunidades a destacar, páginas que mejor funcionaron (según atribución), Google/SEO,
+  mejoras realizadas y próximas acciones. Incluye "Imprimir / Guardar como PDF" (vista
+  print-friendly); la generación automática mensual queda pendiente.
+- `/dashboard/plan` (**Plan de mejora**, grupo *Crecimiento*) — Qué recomendamos → qué
+  estamos haciendo → qué hemos terminado, agrupado por estado, con categoría, prioridad,
+  impacto esperado, fecha prevista y resultado al completarse.
+- `/dashboard/support` (**Solicitudes**, grupo *Crecimiento*) — El cliente pide cambios de
+  contenido, nuevas secciones, ayuda técnica, etc. Ve sus solicitudes abiertas y
+  resueltas, con las notas de respuesta de Línea Sur cuando existen.
+- `/dashboard/website` (**Mi Web**, grupo *Tu web*) — Resumen del sitio conectado
+  (nombre, dominio, estado, última actualización) con accesos a Editar web / Ver web /
+  Vista previa.
 - `/dashboard/website/edit` — Editor por secciones, genérico y controlado por el
   Editable Schema (no hardcodea "Clínica Aurora"): árbol de páginas/secciones, formulario
-  de campos, vista previa con selector Desktop/Tablet/Móvil, borrador con contador de
-  cambios sin publicar, Publicar/Descartar, historial de cambios y biblioteca de
-  imágenes básica.
-- `/dashboard/admin/sites` (**Sitios (equipo)**) — Solo visible para `linea_staff`.
-  Lista los sitios conectados y permite añadir uno nuevo (nombre, negocio, dominio,
-  URLs). Configurar su esquema (páginas/secciones/campos editables) se hace por SQL,
-  a propósito: no hay todavía un constructor visual de esquemas.
-- `/dashboard/plan` (**Plan de mejora**) — Checklist de solo lectura de las tareas que
-  Línea Sur está trabajando para el negocio, con próxima fecha de revisión.
-- `/dashboard/reports` (**Informes**) — Resumen del periodo actual vs. el anterior
-  (reutiliza las mismas métricas; la exportación a PDF queda pendiente).
-- `/dashboard/settings` (**Configuración**) — Valor medio de cliente y tasa de cierre
-  estimada, usados para calcular el valor comercial potencial.
+  de campos, vista previa con selector Desktop/Tablet/Móvil y **edición visual**: pasar el
+  cursor sobre un texto/CTA/teléfono de la preview lo resalta, y al hacer clic se abre y
+  resalta su campo en el formulario (sin publicar nada automáticamente). Borrador con
+  contador de cambios sin publicar, Publicar/Descartar, historial de cambios con
+  **"Restaurar esta versión"** (carga el snapshot como borrador para revisar antes de
+  publicar, nunca sobrescribe producción directamente) y biblioteca de imágenes básica.
+- `/dashboard/admin/sites` (**Sitios (equipo)**, grupo *Equipo*) — Solo visible para
+  `linea_staff`. Lista los sitios conectados y permite añadir uno nuevo (nombre, negocio,
+  dominio, URLs). Configurar su esquema (páginas/secciones/campos editables) se hace por
+  SQL, a propósito: no hay todavía un constructor visual de esquemas.
+- `/dashboard/settings` (**Configuración**, grupo *Cuenta*) — Valor medio de cliente y
+  tasa de cierre estimada, usados para calcular el valor comercial potencial.
 
 ## Qué es real y qué es demo/pendiente
 
 Para que ningún número parezca real sin serlo:
 
 - **Real siempre** (en modo demo y en modo Supabase): oportunidades, visitas,
-  conversión, acciones comerciales, fuentes de tráfico, Plan de mejora, valor comercial
-  potencial. Las comparaciones "vs. mes anterior" se calculan contra los 30 días previos.
+  conversión, acciones comerciales, fuentes de tráfico, atribución de leads (fuente y
+  página de origen), Plan de mejora, Solicitudes, valor comercial potencial. Las
+  comparaciones "vs. mes anterior" se calculan contra los 30 días previos.
 - **No conectado en modo real / ilustrativo en modo demo**: la sección **Google**
   (Search Console no está integrado). En modo real se muestra un estado "conecta
   Google" en vez de datos inventados; en modo demo se muestran cifras de ejemplo
-  claramente etiquetadas.
+  claramente etiquetadas. Las checklists de SEO local y GEO/IA en esa misma página **sí
+  son reales** en ambos modos: se calculan a partir del contenido publicado del sitio,
+  nunca se marcan como "hecho" sin evidencia.
 - Las tarjetas de "Oportunidad SEO" en `/dashboard/opportunities` que hacen referencia a
   una página o búsqueda concreta son **ejemplos ilustrativos, solo en modo demo**
   (llevan la etiqueta "Ejemplo ilustrativo"): requieren analítica por página y Search
   Console, que todavía no existen. El resto de tarjetas de esa página sí se generan con
   datos reales del negocio.
+- La atribución de leads (`traffic_source`, `landing_page`...) es honesta con los datos
+  que faltan: un lead real sin esos campos se agrupa como "Sin datos de origen" en vez de
+  inventarle una fuente.
 - No se han añadido "Reservas" ni "Solicitudes de presupuesto" como canales de contacto
   reales porque hoy no existe ninguna integración que genere ese tipo de lead.
 
@@ -199,12 +231,22 @@ nuevo con la misma forma (Hero + Contacto) no requiere tocar código, solo inser
 en `site_pages`/`site_sections`/`site_fields` (por SQL, desde `/dashboard/admin/sites`
 solo se crea la fila de `sites`).
 
+La edición visual (Prioridad 9 de V0.1) es una versión MVP intencionadamente acotada:
+funciona para texto corto, texto largo, CTA y teléfono/WhatsApp del Hero/Contacto (los
+tipos que el propio `SitePreview` sabe renderizar); el resto de tipos de campo se sigue
+editando desde el formulario lateral. No usa iframe ni `postMessage` — la preview se
+renderiza en el mismo árbol de React que el editor, así que seleccionar un campo desde
+la preview simplemente resalta y hace scroll hasta su input real; el esquema sigue
+siendo la fuente de verdad. La restauración de versiones (Prioridad 10) carga el
+`snapshot` de una publicación anterior como **borrador**, nunca sobrescribe lo publicado
+directamente: el usuario revisa y decide si publicar.
+
 Preparado pero **no construido a propósito** en esta iteración (queda documentado, no
-sobrecargado): edición inline directamente sobre la vista previa, un importador que
-detecte automáticamente atributos `data-linea-editable` en una web ya construida,
-funciones de IA junto a los campos de texto, restauración de versiones desde el
-historial, adapters para stacks que no sean el nativo de Línea Sur, y un constructor
-visual de esquemas para `/dashboard/admin/sites`.
+sobrecargado): edición inline vía iframe + `postMessage` (bridge de seguridad completo),
+un importador que detecte automáticamente atributos `data-linea-editable` en una web ya
+construida, funciones de IA junto a los campos de texto, adapters para stacks que no
+sean el nativo de Línea Sur, y un constructor visual de esquemas para
+`/dashboard/admin/sites`.
 
 ## Aviso conocido (solo en `next dev`, no en producción)
 
@@ -221,11 +263,14 @@ existentes antes de esta iteración).
 
 ## Pendiente para una V1
 
-Integración real con Google Search Console (visibilidad, consultas), atribución de
-cada lead a su fuente de tráfico de origen, analítica por página, exportación de
-informes en PDF, edición del Plan de mejora desde un panel interno de Línea Sur,
-edición inline en la vista previa, importador automático de esquema, IA junto a los
-campos de texto, restauración de versiones, adapters para otros stacks, constructor
-visual de esquemas, CRM avanzado, automatizaciones, envío de emails, API de WhatsApp,
-reservas, facturación/Stripe, roles avanzados, PageSpeed, notificaciones y tests
-exhaustivos quedan fuera de esta versión a propósito.
+Integración real con Google Search Console (visibilidad, consultas), analítica por
+página propia (más allá de la atribución de leads ya implementada), exportación
+automática de informes en PDF (hoy es una vista print-friendly manual), edición del
+Plan de mejora y respuesta a Solicitudes desde un panel interno de Línea Sur (hoy se
+gestionan por SQL), edición inline vía iframe/`postMessage` para sitios que no compartan
+árbol de React con el editor, importador automático de esquema, IA junto a los campos de
+texto, adapters para otros stacks, constructor visual de esquemas, pipeline visual
+(Kanban) de Contactos, multidioma, RBAC con roles más allá de `client`/`admin`/
+`linea_staff`, CRM avanzado, automatizaciones, envío de emails, API de WhatsApp,
+reservas, facturación/Stripe, PageSpeed, notificaciones y tests exhaustivos quedan fuera
+de esta versión a propósito.

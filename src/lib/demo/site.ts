@@ -182,6 +182,7 @@ export const adapter: SiteAdapter = {
     await addDemoSiteChangeLogEntry({
       summary: `${actorEmail ?? "Alguien"} publicó cambios en Inicio`,
       created_at: now,
+      snapshot: draft,
     });
   },
 
@@ -192,7 +193,12 @@ export const adapter: SiteAdapter = {
       site_id: DEMO_SITE_ID,
       actor_email: null,
       summary: entry.summary,
+      snapshot: entry.snapshot ?? null,
       created_at: entry.created_at,
     }));
+  },
+
+  async restoreVersion(_siteId, snapshot) {
+    await setDemoSiteOverrides({ draft: snapshot as Record<string, string> });
   },
 };

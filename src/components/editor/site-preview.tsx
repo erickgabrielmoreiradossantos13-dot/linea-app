@@ -1,4 +1,5 @@
-import { Phone, MessageCircle } from "lucide-react";
+import { Phone, MessageCircle, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type PreviewViewport = "desktop" | "tablet" | "mobile";
 
@@ -14,6 +15,41 @@ interface SitePreviewProps {
   /** Valores agrupados por clave de sección → clave de campo. */
   sections: Record<string, Record<string, string>>;
   viewport: PreviewViewport;
+  /** Edición visual MVP: clic en un elemento de la preview abre su campo en el editor. */
+  onSelectField?: (sectionKey: string, fieldKey: string) => void;
+}
+
+/** Envuelve un valor editable con hover (lápiz) + clic → abrir su campo. */
+function Editable({
+  sectionKey,
+  fieldKey,
+  onSelectField,
+  className,
+  children,
+}: {
+  sectionKey: string;
+  fieldKey: string;
+  onSelectField?: (sectionKey: string, fieldKey: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (!onSelectField) return <div className={className}>{children}</div>;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectField(sectionKey, fieldKey)}
+      className={cn(
+        "group/editable relative w-full rounded-md text-left outline-none transition-colors hover:bg-brand-500/[0.06] focus-visible:bg-brand-500/[0.06]",
+        className
+      )}
+    >
+      {children}
+      <span className="pointer-events-none absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover/editable:opacity-100">
+        <Pencil className="h-3 w-3" />
+      </span>
+    </button>
+  );
 }
 
 /**
@@ -22,7 +58,7 @@ interface SitePreviewProps {
  * motor de diseño universal: por ahora solo el sitio de Clínica Aurora existe,
  * así que optimizamos para eso sin fingir soportar layouts que no existen.
  */
-export function SitePreview({ businessName, domain, sections, viewport }: SitePreviewProps) {
+export function SitePreview({ businessName, domain, sections, viewport, onSelectField }: SitePreviewProps) {
   const hero = sections.hero;
   const contact = sections.contact;
 
@@ -47,28 +83,38 @@ export function SitePreview({ businessName, domain, sections, viewport }: SitePr
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-brand-600">
                 {businessName}
               </p>
-              <h2 className="max-w-md text-2xl font-semibold leading-tight tracking-tight text-ink-900 sm:text-3xl">
-                {hero.title || "Título principal de tu web"}
-              </h2>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-500">
-                {hero.subtitle || "Aquí aparecerá la descripción de tu negocio."}
-              </p>
+              <Editable sectionKey="hero" fieldKey="title" onSelectField={onSelectField}>
+                <h2 className="max-w-md text-2xl font-semibold leading-tight tracking-tight text-ink-900 sm:text-3xl">
+                  {hero.title || "Título principal de tu web"}
+                </h2>
+              </Editable>
+              <Editable sectionKey="hero" fieldKey="subtitle" onSelectField={onSelectField} className="mt-4">
+                <p className="max-w-md text-sm leading-relaxed text-ink-500">
+                  {hero.subtitle || "Aquí aparecerá la descripción de tu negocio."}
+                </p>
+              </Editable>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center rounded-lg bg-ink-900 px-5 py-2.5 text-sm font-medium text-white">
-                  {hero.ctaLabel || "Texto del botón"}
-                </span>
+                <Editable sectionKey="hero" fieldKey="ctaLabel" onSelectField={onSelectField} className="w-auto">
+                  <span className="inline-flex items-center rounded-lg bg-ink-900 px-5 py-2.5 text-sm font-medium text-white">
+                    {hero.ctaLabel || "Texto del botón"}
+                  </span>
+                </Editable>
 
                 {contact?.phone && (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600">
-                    <Phone className="h-3.5 w-3.5" /> {contact.phone}
-                  </span>
+                  <Editable sectionKey="contact" fieldKey="phone" onSelectField={onSelectField} className="w-auto">
+                    <span className="inline-flex items-center gap-1.5 px-1 text-sm font-medium text-ink-600">
+                      <Phone className="h-3.5 w-3.5" /> {contact.phone}
+                    </span>
+                  </Editable>
                 )}
 
                 {contact?.whatsapp && (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                    <MessageCircle className="h-3.5 w-3.5" /> {contact.whatsapp}
-                  </span>
+                  <Editable sectionKey="contact" fieldKey="whatsapp" onSelectField={onSelectField} className="w-auto">
+                    <span className="inline-flex items-center gap-1.5 px-1 text-sm font-medium text-emerald-600">
+                      <MessageCircle className="h-3.5 w-3.5" /> {contact.whatsapp}
+                    </span>
+                  </Editable>
                 )}
               </div>
             </div>

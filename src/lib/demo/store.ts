@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
-import type { LeadStatus } from "@/lib/types";
+import type { LeadStatus, SupportRequest } from "@/lib/types";
 
 const SESSION_COOKIE = "linea_demo_session";
 const LEADS_COOKIE = "linea_demo_leads";
 const BUSINESS_COOKIE = "linea_demo_business";
 const SITE_COOKIE = "linea_demo_site";
 const SITE_LOG_COOKIE = "linea_demo_site_log";
+const SUPPORT_COOKIE = "linea_demo_support";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -83,6 +84,7 @@ export async function setDemoSiteOverrides(patch: {
 export interface DemoChangeLogEntry {
   summary: string;
   created_at: string;
+  snapshot: Record<string, string>;
 }
 
 export async function getDemoSiteChangeLog(): Promise<DemoChangeLogEntry[]> {
@@ -124,4 +126,22 @@ export async function setDemoBusinessOverrides(data: Partial<DemoBusinessFields>
   const current = await getDemoBusinessOverrides();
   const merged = { ...current, ...data };
   store.set(BUSINESS_COOKIE, JSON.stringify(merged), COOKIE_OPTS);
+}
+
+export async function getDemoExtraSupportRequests(): Promise<SupportRequest[]> {
+  const store = await cookies();
+  const raw = store.get(SUPPORT_COOKIE)?.value;
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as SupportRequest[];
+  } catch {
+    return [];
+  }
+}
+
+export async function addDemoSupportRequest(request: SupportRequest) {
+  const store = await cookies();
+  const current = await getDemoExtraSupportRequests();
+  const updated = [request, ...current].slice(0, 20);
+  store.set(SUPPORT_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
 }
