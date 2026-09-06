@@ -11,6 +11,7 @@ import {
   Smartphone,
   History,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldInput } from "@/components/editor/field-input";
@@ -18,7 +19,14 @@ import { SitePreview, type PreviewViewport } from "@/components/editor/site-prev
 import { MediaLibraryModal } from "@/components/editor/media-library-modal";
 import { cn, formatDate } from "@/lib/utils";
 import type { MediaAsset, SiteChangeLogEntry, SiteSchema } from "@/lib/types";
-import { saveFieldDraftAction, discardDraftAction, publishSiteAction } from "@/app/dashboard/website/edit/actions";
+import {
+  saveFieldDraftAction,
+  discardDraftAction,
+  publishSiteAction,
+  restoreVersionAction,
+} from "@/app/dashboard/website/edit/actions";
+
+type EditorFeedback = { type: "publishing" } | { type: "success"; message: string } | { type: "error"; message: string };
 
 interface EditorShellProps {
   businessId: string;
@@ -61,10 +69,13 @@ export function EditorShell({
   const [viewport, setViewport] = useState<PreviewViewport>("desktop");
   const [mediaFieldId, setMediaFieldId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<EditorFeedback | null>(null);
+  const [highlightFieldId, setHighlightFieldId] = useState<string | null>(null);
+  const [confirmingRestoreId, setConfirmingRestoreId] = useState<string | null>(null);
 
   const [isPublishing, startPublishing] = useTransition();
   const [isDiscarding, startDiscarding] = useTransition();
+  const [isRestoring, startRestoring] = useTransition();
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const selectedPage = schema.pages.find((p) => p.id === selectedPageId) ?? schema.pages[0];
@@ -88,9 +99,50 @@ export function EditorShell({
     clearTimeout(debounceRef.current[fieldId]);
     debounceRef.current[fieldId] = setTimeout(() => {
       saveFieldDraftAction(fieldId, value).catch(() => {
-        setFeedback("No se pudo guardar el borrador.");
+        setFeedback({ type: "error", message: "No se pudo guardar el borrador." });
       });
     }, 500);
+  }
+
+  function handleSelectFieldFromPreview(sectionKey: string, fieldKey: string) {
+    for (const page of schema.pages) {
+      const section = page.sections.find((s) => s.key === sectionKey);
+      const field = section?.fields.find((f) => f.key === fieldKey);
+      if (section && field) {
+        setSelectedPageId(page.id);
+        setSelectedSectionId(section.id);
+        setHighlightFieldId(field.id);
+        setTimeout(() => {
+          document.getElementById(`field-${field.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+        setTimeout(() => setHighlightFieldId((current) => (current === field.id ? null : current)), 2200);
+        return;
+      }
+    }
+  }
+
+  function handleRestore(entry: SiteChangeLogEntry) {
+    if (!entry.snapshot) return;
+
+    if (confirmingRestoreId !== entry.id) {
+      setConfirmingRestoreId(entry.id);
+      return;
+    }
+
+    setConfirmingRestoreId(null);
+    startRestoring(async () => {
+      try {
+        await restoreVersionAction(schema.site.id, entry.snapshot as Record<string, unknown>);
+        setValues((prev) => ({ ...prev, ...(entry.snapshot as Record<string, string>) }));
+        setShowHistory(false);
+        setFeedback({
+          type: "success",
+          message: `Versión del ${formatDate(entry.created_at)} cargada como borrador. Revisa y publica cuando quieras.`,
+        });
+      } catch {
+        setFeedback({ type: "error", message: "No se pudo restaurar esta versión." });
+      }
+    });
   }
 
   function handleDiscard() {
@@ -100,20 +152,20 @@ export function EditorShell({
         await discardDraftAction(schema.site.id);
         setValues({ ...published });
       } catch {
-        setFeedback("No se pudieron descartar los cambios.");
+        setFeedback({ type: "error", message: "No se pudieron descartar los cambios." });
       }
     });
   }
 
   function handlePublish() {
-    setFeedback("publishing");
+    setFeedback({ type: "publishing" });
     startPublishing(async () => {
       try {
         await publishSiteAction(schema.site.id);
         setPublished({ ...values });
-        setFeedback("published");
+        setFeedback({ type: "success", message: "✓ Tu web está actualizada" });
       } catch {
-        setFeedback("No se pudieron publicar los cambios.");
+        setFeedback({ type: "error", message: "No se pudieron publicar los cambios." });
       }
     });
   }
@@ -155,13 +207,11 @@ export function EditorShell({
         </div>
       </div>
 
-      {feedback === "published" && (
-        <p className="mb-4 animate-fade-in-up text-sm font-medium text-emerald-600">
-          ✓ Tu web está actualizada
-        </p>
+      {feedback?.type === "success" && (
+        <p className="mb-4 animate-fade-in-up text-sm font-medium text-emerald-600">{feedback.message}</p>
       )}
-      {feedback && feedback !== "published" && feedback !== "publishing" && (
-        <p className="mb-4 animate-fade-in-up text-sm text-red-600">{feedback}</p>
+      {feedback?.type === "error" && (
+        <p className="mb-4 animate-fade-in-up text-sm text-red-600">{feedback.message}</p>
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_1fr_1fr]">
@@ -202,7 +252,14 @@ export function EditorShell({
           <h3 className="mb-4 text-sm font-semibold text-ink-900">{selectedSection?.name}</h3>
           <div className="space-y-4">
             {selectedSection?.fields.map((field) => (
-              <div key={field.id} className="space-y-1.5">
+              <div
+                key={field.id}
+                id={`field-${field.id}`}
+                className={cn(
+                  "space-y-1.5 rounded-lg p-1.5 transition-all duration-300",
+                  highlightFieldId === field.id && "bg-brand-500/[0.06] ring-2 ring-brand-300"
+                )}
+              >
                 <label className="text-sm font-medium text-ink-700">{field.label}</label>
                 <FieldInput
                   type={field.field_type}
@@ -244,7 +301,11 @@ export function EditorShell({
             domain={schema.site.domain}
             sections={previewSections}
             viewport={viewport}
+            onSelectField={handleSelectFieldFromPreview}
           />
+          <p className="mt-2 text-center text-xs text-ink-400">
+            Pasa el cursor sobre un texto de la preview y haz clic para editarlo directamente.
+          </p>
           {schema.site.production_url && (
             <a
               href={schema.site.production_url}
@@ -286,6 +347,20 @@ export function EditorShell({
                   <li key={entry.id} className="border-b border-ink-100 pb-3 last:border-0">
                     <p className="text-xs text-ink-400">{formatDate(entry.created_at)}</p>
                     <p className="text-sm text-ink-700">{entry.summary}</p>
+                    {entry.snapshot && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(entry)}
+                        disabled={isRestoring}
+                        className={cn(
+                          "mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium transition-colors",
+                          confirmingRestoreId === entry.id ? "text-red-600" : "text-brand-600 hover:text-brand-700"
+                        )}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        {confirmingRestoreId === entry.id ? "¿Seguro? Confirmar restauración" : "Restaurar esta versión"}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

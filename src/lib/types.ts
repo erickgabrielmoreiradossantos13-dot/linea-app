@@ -10,7 +10,27 @@ export type TrafficSource =
   | "directo"
   | "referido";
 
-export type PlanStatus = "pendiente" | "en_progreso" | "completado";
+export type PlanStatus = "recomendado" | "planificado" | "en_progreso" | "completado" | "descartado";
+export type PlanCategory =
+  | "conversion"
+  | "contenido"
+  | "seo_local"
+  | "geo_ia"
+  | "google"
+  | "rendimiento"
+  | "diseno_ux"
+  | "tecnico";
+export type PlanPriority = "alta" | "media" | "baja";
+
+export type SupportCategory =
+  | "cambio_contenido"
+  | "nueva_seccion"
+  | "problema_tecnico"
+  | "seo_google"
+  | "nueva_funcionalidad"
+  | "otro";
+export type SupportPriority = "alta" | "media" | "baja";
+export type SupportStatus = "recibida" | "revisando" | "en_progreso" | "resuelta";
 
 export interface Business {
   id: string;
@@ -36,6 +56,12 @@ export interface Lead {
   status: LeadStatus;
   value_estimate: number;
   created_at: string;
+  /** Atribución básica: de dónde vino esta oportunidad (puede faltar en leads antiguos). */
+  traffic_source: TrafficSource | null;
+  traffic_medium: string | null;
+  campaign: string | null;
+  landing_page: string | null;
+  referrer: string | null;
 }
 
 export interface WebsiteContent {
@@ -69,6 +95,26 @@ export interface ImprovementPlanItem {
   title: string;
   status: PlanStatus;
   position: number;
+  category: PlanCategory | null;
+  priority: PlanPriority;
+  description: string | null;
+  impact: string | null;
+  target_date: string | null;
+  result: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportRequest {
+  id: string;
+  business_id: string;
+  created_by: string | null;
+  title: string;
+  description: string;
+  category: SupportCategory;
+  priority: SupportPriority;
+  status: SupportStatus;
+  response_notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -99,9 +145,50 @@ export const TRAFFIC_SOURCE_LABELS: Record<TrafficSource, string> = {
 };
 
 export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
-  pendiente: "Pendiente",
+  recomendado: "Recomendado",
+  planificado: "Planificado",
   en_progreso: "En progreso",
   completado: "Completado",
+  descartado: "Descartado",
+};
+
+export const PLAN_CATEGORY_LABELS: Record<PlanCategory, string> = {
+  conversion: "Conversión",
+  contenido: "Contenido",
+  seo_local: "SEO local",
+  geo_ia: "GEO / IA",
+  google: "Google",
+  rendimiento: "Rendimiento",
+  diseno_ux: "Diseño / UX",
+  tecnico: "Técnico",
+};
+
+export const PLAN_PRIORITY_LABELS: Record<PlanPriority, string> = {
+  alta: "Alta",
+  media: "Media",
+  baja: "Baja",
+};
+
+export const SUPPORT_CATEGORY_LABELS: Record<SupportCategory, string> = {
+  cambio_contenido: "Cambio de contenido",
+  nueva_seccion: "Nueva sección",
+  problema_tecnico: "Problema técnico",
+  seo_google: "SEO / Google",
+  nueva_funcionalidad: "Nueva funcionalidad",
+  otro: "Otro",
+};
+
+export const SUPPORT_PRIORITY_LABELS: Record<SupportPriority, string> = {
+  alta: "Alta",
+  media: "Media",
+  baja: "Baja",
+};
+
+export const SUPPORT_STATUS_LABELS: Record<SupportStatus, string> = {
+  recibida: "Recibida",
+  revisando: "Revisando",
+  en_progreso: "En progreso",
+  resuelta: "Resuelta",
 };
 
 // =========================================================
@@ -204,6 +291,8 @@ export interface SiteChangeLogEntry {
   site_id: string;
   actor_email: string | null;
   summary: string;
+  /** Valores publicados (por field_id) en el momento de esta publicación. Permite "Restaurar". */
+  snapshot: Record<string, unknown> | null;
   created_at: string;
 }
 

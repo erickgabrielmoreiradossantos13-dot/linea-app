@@ -128,13 +128,12 @@ export function StatCard({
           <p className="mt-3 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-ink-900">
             {formatValue(animated, formatType)}
           </p>
-          {delta ? (
+          {delta && (
             <div className="mt-2">
               <DeltaBadge delta={delta} />
             </div>
-          ) : (
-            hint && <p className="mt-2 text-xs text-ink-400">{hint}</p>
           )}
+          {hint && <p className={cn("text-xs text-ink-400", delta ? "mt-1.5" : "mt-2")}>{hint}</p>}
         </>
       )}
     </div>

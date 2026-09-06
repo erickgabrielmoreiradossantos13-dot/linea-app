@@ -5,6 +5,7 @@ import { getCurrentBusiness } from "@/lib/supabase/business";
 import { getDashboardMetrics } from "@/lib/dashboard";
 import { getLeads } from "@/lib/leads";
 import { getGoogleVisibility } from "@/lib/google";
+import { getImprovementPlan } from "@/lib/plan";
 import { getOpportunityInsights, getDemoSeoInsights } from "@/lib/insights";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { GreetingHeader } from "@/components/dashboard/greeting-header";
@@ -15,6 +16,7 @@ import { TrafficSources } from "@/components/dashboard/traffic-sources";
 import { LineaScore } from "@/components/dashboard/linea-score";
 import { OpportunityCard } from "@/components/dashboard/opportunity-card";
 import { CommercialValueCard } from "@/components/dashboard/commercial-value-card";
+import { EvolutionCard } from "@/components/dashboard/evolution-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -26,10 +28,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const { business } = await getCurrentBusiness();
-  const [metrics, leads, googleVisibility] = await Promise.all([
+  const [metrics, leads, googleVisibility, planItems] = await Promise.all([
     getDashboardMetrics(business.id, business.linea_score),
     getLeads(business.id),
     getGoogleVisibility(),
+    getImprovementPlan(business.id),
   ]);
 
   const insights = [
@@ -44,6 +47,7 @@ export default async function DashboardPage() {
         businessName={business.name}
         opportunities={metrics.opportunities}
         opportunitiesDelta={metrics.opportunitiesDelta}
+        isDemo={business.is_demo}
       />
 
       {/* 1. Resultados comerciales */}
@@ -54,6 +58,7 @@ export default async function DashboardPage() {
           formatType="number"
           icon={<Target className="h-4 w-4" strokeWidth={2} />}
           accent="violet"
+          hint="Personas que han mostrado intención real de contacto"
           delta={metrics.opportunitiesDelta}
           delay={0}
         />
@@ -63,6 +68,7 @@ export default async function DashboardPage() {
           formatType="number"
           icon={<Users className="h-4 w-4" strokeWidth={2} />}
           accent="sky"
+          hint="Personas que han entrado en tu web"
           delta={metrics.visitorsDelta}
           delay={60}
         />
@@ -72,6 +78,7 @@ export default async function DashboardPage() {
           formatType="percent"
           icon={<TrendingUp className="h-4 w-4" strokeWidth={2} />}
           accent="emerald"
+          hint="De cada 100 visitas, cuántas terminan en contacto"
           delta={metrics.conversionDelta}
           delay={120}
         />
@@ -103,10 +110,10 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* 2. Oportunidades destacadas */}
+      {/* 2. Qué necesita tu atención */}
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-ink-900">Oportunidades destacadas</h2>
+          <h2 className="text-[15px] font-semibold text-ink-900">Qué necesita tu atención</h2>
           <Link
             href="/dashboard/opportunities"
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
@@ -155,13 +162,22 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <CardHeader>
             <CardTitle>Acciones comerciales</CardTitle>
           </CardHeader>
           <CardContent>
             <ChannelBreakdown data={metrics.leadsBySource} />
+          </CardContent>
+        </Card>
+
+        <Card className="animate-fade-in-up" style={{ animationDelay: "320ms" }}>
+          <CardHeader>
+            <CardTitle>Tu web está evolucionando</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EvolutionCard items={planItems} />
           </CardContent>
         </Card>
       </div>

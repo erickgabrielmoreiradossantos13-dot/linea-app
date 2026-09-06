@@ -3,16 +3,23 @@ import type { Lead } from "@/lib/types";
 
 export type InsightPriority = "alta" | "atencion" | "oportunidad" | "mejora";
 
+export interface InsightAction {
+  label: string;
+  href: string;
+}
+
 export interface OpportunityInsight {
   id: string;
   priority: InsightPriority;
   title: string;
   explanation: string;
   recommendation: string;
+  /** Impacto comercial esperado si se actúa sobre esto (una frase, no jerga técnica). */
+  impact?: string;
   /** Ejemplo ilustrativo (solo modo demo): requiere datos que aún no existen. */
   illustrative?: boolean;
-  /** Si el insight habla de una página concreta, enlaza a editarla. */
-  editHref?: string;
+  /** Dónde puede actuar el usuario (Mi Web, Contactos, Plan, Google...). Máx. 2 por tarjeta. */
+  actions?: InsightAction[];
 }
 
 const STALE_DAYS = 3;
@@ -43,7 +50,8 @@ export function getOpportunityInsights(
       ).toFixed(1)} y ahora ${(metrics.conversionRate * 100).toFixed(1)}.`,
       recommendation:
         "Revisa el formulario de contacto, el botón de WhatsApp y las llamadas a la acción de tu web: pequeños cambios ahí suelen recuperar la conversión.",
-      editHref: "/dashboard/website/edit",
+      impact: "Recuperar la conversión anterior podría suponer varias oportunidades más al mes sin gastar en más visitas.",
+      actions: [{ label: "Editar página", href: "/dashboard/website/edit" }],
     });
   }
 
@@ -63,7 +71,8 @@ export function getOpportunityInsights(
       )}% este mes, pero las oportunidades generadas no crecieron al mismo ritmo.`,
       recommendation:
         "Revisa la velocidad de carga de tu web y si el teléfono, WhatsApp y formulario están bien visibles nada más entrar.",
-      editHref: "/dashboard/website/edit",
+      impact: "Estás pagando (en visibilidad) por ese tráfico extra: que convierta es la diferencia entre visitas y clientes.",
+      actions: [{ label: "Editar página", href: "/dashboard/website/edit" }],
     });
   }
 
@@ -81,6 +90,8 @@ export function getOpportunityInsights(
       explanation:
         "Cuanto más tiempo pasa sin responder a un contacto nuevo, más difícil es que termine convirtiéndose en cliente.",
       recommendation: `Entra en Contactos y responde a los que siguen como "Nuevo" hace más de ${STALE_DAYS} días.`,
+      impact: "Cada día de retraso reduce las posibilidades de que ese contacto termine siendo cliente.",
+      actions: [{ label: "Ver contactos", href: "/dashboard/leads?status=nuevo" }],
     });
   }
 
@@ -98,6 +109,8 @@ export function getOpportunityInsights(
         metrics.opportunitiesDelta.percent * 100
       )}% más de contactos que el periodo anterior.`,
       recommendation: "Mantén la web actualizada y sigue respondiendo rápido: es lo que está funcionando.",
+      impact: "Mantener este ritmo se traduce directamente en más clientes potenciales cada mes.",
+      actions: [{ label: "Ver informe del mes", href: "/dashboard/reports" }],
     });
   }
 
@@ -119,8 +132,9 @@ export function getDemoSeoInsights(): OpportunityInsight[] {
       explanation:
         "Recibe bastantes visitas pero solo un 0,8% termina contactando (ejemplo ilustrativo: requiere analítica por página, todavía no disponible).",
       recommendation: "Reforzar el CTA, añadir prueba social (reseñas, casos) y simplificar el formulario.",
+      impact: "Ejemplo ilustrativo de cuánto puede pesar una sola página cuando se mide el detalle.",
       illustrative: true,
-      editHref: "/dashboard/website/edit",
+      actions: [{ label: "Editar página", href: "/dashboard/website/edit" }],
     },
     {
       id: "demo-seo-urgencias",
@@ -129,8 +143,9 @@ export function getDemoSeoInsights(): OpportunityInsight[] {
       explanation:
         '312 personas buscaron "dentista urgencias Málaga" pero la web no tiene una página específica para ese servicio (ejemplo ilustrativo: requiere Google Search Console, todavía no conectado).',
       recommendation: "Crear una página dedicada a urgencias dentales.",
+      impact: "Ejemplo ilustrativo de cómo una búsqueda frecuente sin página propia es negocio que se pierde.",
       illustrative: true,
-      editHref: "/dashboard/website/edit",
+      actions: [{ label: "Editar página", href: "/dashboard/website/edit" }],
     },
   ];
 }

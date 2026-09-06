@@ -74,14 +74,25 @@ export function OpportunityCard({ insight }: { insight: OpportunityInsight }) {
             <span className="font-medium">Recomendación: </span>
             {insight.recommendation}
           </p>
+          {insight.impact && (
+            <p className="mt-2 text-sm leading-relaxed text-ink-500">
+              <span className="font-medium text-ink-700">Impacto: </span>
+              {insight.impact}
+            </p>
+          )}
 
-          {insight.editHref && (
-            <Link
-              href={insight.editHref}
-              className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
-            >
-              Editar página <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+          {insight.actions && insight.actions.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {insight.actions.map((action) => (
+                <Link
+                  key={action.href + action.label}
+                  href={action.href}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
+                >
+                  {action.label} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       </div>

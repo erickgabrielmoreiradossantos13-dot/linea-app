@@ -18,6 +18,7 @@
 *.pem
 npm-debug.log*
 next-env.d.ts
+*.tsbuildinfo
 
 # supabase
 /supabase/.temp

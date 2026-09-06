@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Mail, Phone as PhoneIcon } from "lucide-react";
 import type { Lead } from "@/lib/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -42,7 +43,9 @@ export function LeadsTable({ leads }: LeadsTableProps) {
                 className="transition-all duration-150 hover:bg-ink-50/60 hover:shadow-[inset_3px_0_0_0_#5b63f0]"
               >
                 <td className="whitespace-nowrap px-5 py-3.5 font-medium text-ink-900">
-                  {lead.name}
+                  <Link href={`/dashboard/leads/${lead.id}`} className="hover:text-brand-600 hover:underline">
+                    {lead.name}
+                  </Link>
                 </td>
                 <td className="px-5 py-3.5">
                   <div className="flex flex-col gap-0.5 text-xs text-ink-500">
