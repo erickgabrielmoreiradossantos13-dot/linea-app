@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { getCurrentBusiness } from "@/lib/supabase/business";
 import { setDemoLeadOverride } from "@/lib/demo/store";
+import { addLeadNote } from "@/lib/leads";
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/types";
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
@@ -36,4 +37,24 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 
   revalidatePath("/dashboard/leads");
   revalidatePath("/dashboard");
+}
+
+export async function addLeadNoteAction(leadId: string, note: string): Promise<{ error: string | null }> {
+  const trimmed = note.trim();
+  if (!trimmed) {
+    return { error: "Escribe algo antes de guardar la nota." };
+  }
+  if (trimmed.length > 2000) {
+    return { error: "La nota es demasiado larga (máximo 2000 caracteres)." };
+  }
+
+  const { business } = await getCurrentBusiness();
+  try {
+    await addLeadNote(business.id, leadId, trimmed);
+  } catch {
+    return { error: "No se pudo guardar la nota. Inténtalo de nuevo." };
+  }
+
+  revalidatePath(`/dashboard/leads/${leadId}`);
+  return { error: null };
 }

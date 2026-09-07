@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import type { LeadStatus, SupportRequest } from "@/lib/types";
+import type { LeadNote, LeadStatus, SupportRequest } from "@/lib/types";
 
 const SESSION_COOKIE = "linea_demo_session";
 const LEADS_COOKIE = "linea_demo_leads";
@@ -7,6 +7,7 @@ const BUSINESS_COOKIE = "linea_demo_business";
 const SITE_COOKIE = "linea_demo_site";
 const SITE_LOG_COOKIE = "linea_demo_site_log";
 const SUPPORT_COOKIE = "linea_demo_support";
+const LEAD_NOTES_COOKIE = "linea_demo_lead_notes";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -144,4 +145,23 @@ export async function addDemoSupportRequest(request: SupportRequest) {
   const current = await getDemoExtraSupportRequests();
   const updated = [request, ...current].slice(0, 20);
   store.set(SUPPORT_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
+}
+
+export async function getDemoLeadNotes(): Promise<Record<string, LeadNote[]>> {
+  const store = await cookies();
+  const raw = store.get(LEAD_NOTES_COOKIE)?.value;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, LeadNote[]>;
+  } catch {
+    return {};
+  }
+}
+
+export async function addDemoLeadNote(note: LeadNote) {
+  const store = await cookies();
+  const current = await getDemoLeadNotes();
+  const forLead = [note, ...(current[note.lead_id] ?? [])].slice(0, 30);
+  const updated = { ...current, [note.lead_id]: forLead };
+  store.set(LEAD_NOTES_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
 }

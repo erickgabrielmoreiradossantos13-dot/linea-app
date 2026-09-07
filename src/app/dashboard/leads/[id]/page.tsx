@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Phone, MessageCircle, Mail } from "lucide-react";
 import { getCurrentBusiness } from "@/lib/supabase/business";
-import { getLeadById } from "@/lib/leads";
+import { getLeadById, getLeadNotes } from "@/lib/leads";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusSelect } from "@/components/leads/status-select";
 import { SourceBadge } from "@/components/leads/source-badge";
+import { LeadNotes } from "@/components/leads/lead-notes";
 import { TRAFFIC_SOURCE_LABELS } from "@/lib/types";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 
@@ -34,6 +35,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const lead = await getLeadById(business.id, id);
 
   if (!lead) notFound();
+
+  const notes = await getLeadNotes(business.id, lead.id);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -93,6 +96,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <Field label="Valor estimado" value={formatCurrency(lead.value_estimate)} />
         </CardContent>
       </Card>
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-400">Notas</h2>
+        <LeadNotes leadId={lead.id} initialNotes={notes} />
+      </div>
     </div>
   );
 }

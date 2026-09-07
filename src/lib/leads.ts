@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { generateDemoLeads } from "@/lib/demo/data";
-import { getDemoLeadOverrides } from "@/lib/demo/store";
+import { getDemoLeadOverrides, getDemoLeadNotes, addDemoLeadNote } from "@/lib/demo/store";
 import { TRAFFIC_SOURCE_LABELS } from "@/lib/types";
-import type { Lead, LeadStatus } from "@/lib/types";
+import type { Lead, LeadNote, LeadStatus } from "@/lib/types";
 
 export async function getLeads(businessId: string): Promise<Lead[]> {
   if (IS_DEMO_MODE) {
@@ -39,6 +39,52 @@ export async function getLeadById(businessId: string, leadId: string): Promise<L
     .maybeSingle();
 
   return (data as Lead) ?? null;
+}
+
+export async function getLeadNotes(businessId: string, leadId: string): Promise<LeadNote[]> {
+  if (IS_DEMO_MODE) {
+    const all = await getDemoLeadNotes();
+    return all[leadId] ?? [];
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("lead_notes")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("lead_id", leadId)
+    .order("created_at", { ascending: false });
+
+  return (data as LeadNote[]) ?? [];
+}
+
+export async function addLeadNote(businessId: string, leadId: string, note: string): Promise<void> {
+  if (IS_DEMO_MODE) {
+    await addDemoLeadNote({
+      id: `demo-note-${Date.now()}`,
+      lead_id: leadId,
+      business_id: businessId,
+      author_email: "demo@lineasur.app",
+      note,
+      created_at: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("lead_notes").insert({
+    business_id: businessId,
+    lead_id: leadId,
+    author_id: user?.id ?? null,
+    author_email: user?.email ?? null,
+    note,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export interface AttributionBreakdown {
