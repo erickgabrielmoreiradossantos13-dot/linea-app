@@ -1,17 +1,27 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { isLineaStaff } from "@/lib/staff";
-import { getAllSitesForStaff, getAllBusinessesForStaff } from "@/lib/admin";
+import { getAllSitesForStaff, getAllBusinessesForStaff, getAdminOverview } from "@/lib/admin";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate } from "@/lib/utils";
+import { AdminOverviewTable } from "@/components/admin/admin-overview-table";
+import { formatDate, formatNumber } from "@/lib/utils";
 import { AddSiteForm } from "./add-site-form";
 
 export const metadata: Metadata = {
-  title: "Administración de sitios · Línea App",
+  title: "Administración · Línea App",
 };
 
 export const dynamic = "force-dynamic";
+
+function KpiTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-ink-100 bg-white p-4">
+      <p className="text-xs font-medium text-ink-400">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-ink-900">{value}</p>
+    </div>
+  );
+}
 
 export default async function AdminSitesPage() {
   const staff = await isLineaStaff();
@@ -19,14 +29,35 @@ export default async function AdminSitesPage() {
     redirect("/dashboard");
   }
 
-  const [sites, businesses] = await Promise.all([getAllSitesForStaff(), getAllBusinessesForStaff()]);
+  const [sites, businesses, overview] = await Promise.all([
+    getAllSitesForStaff(),
+    getAllBusinessesForStaff(),
+    getAdminOverview(),
+  ]);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="Sitios conectados"
-        description="Solo visible para el equipo de Línea Sur. Añade un sitio y luego configura su contenido editable por SQL."
+        title="Administración"
+        description="Centro operativo de Línea Sur: cómo está cada cliente, ahora mismo."
       />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <KpiTile label="Clientes activos" value={formatNumber(overview.totals.activeClients)} />
+        <KpiTile label="Webs publicadas" value={formatNumber(overview.totals.publishedSites)} />
+        <KpiTile label="Leads (30 días)" value={formatNumber(overview.totals.totalLeads)} />
+        <KpiTile label="Necesitan atención" value={formatNumber(overview.totals.needAttention)} />
+        <KpiTile label="Línea Score medio" value={String(overview.totals.averageScore)} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Clientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminOverviewTable rows={overview.rows} />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
