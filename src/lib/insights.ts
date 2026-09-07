@@ -22,7 +22,7 @@ export interface OpportunityInsight {
   actions?: InsightAction[];
 }
 
-const STALE_DAYS = 3;
+export const STALE_DAYS = 3;
 
 /**
  * Motor de reglas (no IA): genera tarjetas de "Oportunidades" a partir de

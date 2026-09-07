@@ -6,6 +6,7 @@ import { getDashboardMetrics } from "@/lib/dashboard";
 import { getLeads } from "@/lib/leads";
 import { getGoogleVisibility } from "@/lib/google";
 import { getImprovementPlan } from "@/lib/plan";
+import { getLineaScore } from "@/lib/score";
 import { getOpportunityInsights, getDemoSeoInsights } from "@/lib/insights";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { GreetingHeader } from "@/components/dashboard/greeting-header";
@@ -29,11 +30,12 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const { business } = await getCurrentBusiness();
   const [metrics, leads, googleVisibility, planItems] = await Promise.all([
-    getDashboardMetrics(business.id, business.linea_score),
+    getDashboardMetrics(business.id),
     getLeads(business.id),
     getGoogleVisibility(),
     getImprovementPlan(business.id),
   ]);
+  const lineaScore = await getLineaScore(business.id, metrics.conversionRate, { leads, visibility: googleVisibility });
 
   const insights = [
     ...getOpportunityInsights(metrics, leads),
@@ -202,7 +204,7 @@ export default async function DashboardPage() {
             <CardTitle>Línea Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <LineaScore score={metrics.lineaScore} />
+            <LineaScore result={lineaScore} />
           </CardContent>
         </Card>
       </div>

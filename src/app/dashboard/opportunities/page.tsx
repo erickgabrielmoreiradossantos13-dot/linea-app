@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function OpportunitiesPage() {
   const { business } = await getCurrentBusiness();
   const [metrics, leads] = await Promise.all([
-    getDashboardMetrics(business.id, business.linea_score),
+    getDashboardMetrics(business.id),
     getLeads(business.id),
   ]);
 

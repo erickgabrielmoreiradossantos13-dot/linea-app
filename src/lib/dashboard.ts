@@ -41,13 +41,9 @@ export interface DashboardMetrics {
   leadsBySource: Record<LeadSource, number>;
   trafficSources: { source: TrafficSource; count: number; percentage: number }[];
   opportunitiesTrend: { date: string; count: number }[];
-  lineaScore: number;
 }
 
-export async function getDashboardMetrics(
-  businessId: string,
-  lineaScore: number
-): Promise<DashboardMetrics> {
+export async function getDashboardMetrics(businessId: string): Promise<DashboardMetrics> {
   if (IS_DEMO_MODE) {
     return getDemoDashboardMetrics();
   }
@@ -157,6 +153,5 @@ export async function getDashboardMetrics(
     leadsBySource,
     trafficSources,
     opportunitiesTrend,
-    lineaScore,
   };
 }

@@ -32,7 +32,7 @@ function Row({ label, current, previous }: { label: string; current: string; pre
 export default async function ReportsPage() {
   const { business } = await getCurrentBusiness();
   const [metrics, leads, googleVisibility, planItems] = await Promise.all([
-    getDashboardMetrics(business.id, business.linea_score),
+    getDashboardMetrics(business.id),
     getLeads(business.id),
     getGoogleVisibility(),
     getImprovementPlan(business.id),
