@@ -43,7 +43,6 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <SettingsForm
-              businessId={business.id}
               avgClientValue={business.avg_client_value}
               closeRate={business.close_rate}
             />

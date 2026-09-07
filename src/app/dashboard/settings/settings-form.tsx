@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { saveBusinessSettings } from "./actions";
 
 interface SettingsFormProps {
-  businessId: string;
   avgClientValue: number | null;
   closeRate: number;
 }
 
-export function SettingsForm({ businessId, avgClientValue, closeRate }: SettingsFormProps) {
+export function SettingsForm({ avgClientValue, closeRate }: SettingsFormProps) {
   const [value, setValue] = useState(avgClientValue !== null ? String(avgClientValue) : "");
   const [ratePercent, setRatePercent] = useState(String(Math.round(closeRate * 100)));
   const [isPending, startTransition] = useTransition();
@@ -39,7 +38,6 @@ export function SettingsForm({ businessId, avgClientValue, closeRate }: Settings
     startTransition(async () => {
       try {
         await saveBusinessSettings({
-          businessId,
           avgClientValue: parsedValue,
           closeRatePercent: parsedRate,
         });
