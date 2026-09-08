@@ -28,18 +28,31 @@ const config: Config = {
           900: "#6b280f",
         },
         carbon: {
-          50: "#f3f4f6",
-          100: "#e2e4e9",
-          200: "#c7cbd3",
-          300: "#9aa1ad",
-          400: "#6f7684",
-          500: "#4b5262",
-          600: "#363c4a",
-          700: "#262b36",
-          800: "#191d26",
-          900: "#12151c",
-          950: "#0a0c11",
+          // Escala oscura derivada del azul de marca (no gris neutro): mismo
+          // tono que el fondo del logo, distinto solo en luminosidad.
+          50: "#f2f5fa",
+          100: "#e1e7f1",
+          200: "#c3cee2",
+          300: "#9aacc9",
+          400: "#6b84ab",
+          500: "#48608a",
+          600: "#324768",
+          700: "#1f2c48",
+          800: "#141d33",
+          900: "#0b1220",
+          950: "#060a14",
         },
+        // Tokens con nombre (background/surface/border/text/brand-blue) que
+        // leen de las variables CSS de globals.css: fuente única de verdad
+        // para la identidad Línea Sur, reutilizable como bg-surface,
+        // text-text-secondary, border-border, etc.
+        background: "var(--background)",
+        surface: "var(--surface)",
+        "surface-hover": "var(--surface-hover)",
+        border: "var(--border)",
+        "brand-blue": "var(--brand-blue)",
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
         secondary: {
           50: "#fff1ee",
           100: "#ffe1da",
