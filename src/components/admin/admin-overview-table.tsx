@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatNumber, formatPercent, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { viewAsBusinessAction } from "@/app/dashboard/admin/sites/actions";
 import type { AdminClientRow, SiteHealth } from "@/lib/admin";
 
 const HEALTH_META: Record<SiteHealth, { label: string; className: string }> = {
@@ -78,18 +79,29 @@ export function AdminOverviewTable({ rows }: { rows: AdminClientRow[] }) {
                   <td className="px-4 py-3 text-ink-400">
                     {row.site?.last_published_at ? formatDate(row.site.last_published_at) : "—"}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.site?.production_url && (
-                      <a
-                        href={row.site.production_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
-                      >
-                        Abrir web
-                        <ExternalLink className="size-3" />
-                      </a>
-                    )}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-3">
+                      {row.site?.production_url && (
+                        <a
+                          href={row.site.production_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+                        >
+                          Abrir web
+                          <ExternalLink className="size-3" />
+                        </a>
+                      )}
+                      <form action={viewAsBusinessAction.bind(null, row.business.id)}>
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-ink-700 hover:text-ink-900 hover:underline"
+                        >
+                          Entrar
+                          <LogIn className="size-3" />
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               );

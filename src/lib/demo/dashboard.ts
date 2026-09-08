@@ -31,7 +31,7 @@ export async function getDemoDashboardMetrics(): Promise<DashboardMetrics> {
   const previousConversionRate =
     DEMO_PREVIOUS_TOTAL_VISITORS > 0 ? DEMO_PREVIOUS_TOTAL_LEADS / DEMO_PREVIOUS_TOTAL_VISITORS : 0;
 
-  const leadsBySource: Record<LeadSource, number> = { whatsapp: 0, formulario: 0, llamada: 0 };
+  const leadsBySource: Record<LeadSource, number> = { whatsapp: 0, formulario: 0, llamada: 0, manual: 0 };
   let potentialValue = 0;
   const trendMap = new Map<string, number>();
 

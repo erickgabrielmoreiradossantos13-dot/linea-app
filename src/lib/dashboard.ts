@@ -115,6 +115,7 @@ export async function getDashboardMetrics(businessId: string): Promise<Dashboard
     whatsapp: 0,
     formulario: 0,
     llamada: 0,
+    manual: 0,
   };
   let potentialValue = 0;
   const trendMap = new Map<string, number>();

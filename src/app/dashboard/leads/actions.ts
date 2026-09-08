@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { getCurrentBusiness } from "@/lib/supabase/business";
 import { setDemoLeadOverride } from "@/lib/demo/store";
-import { addLeadNote } from "@/lib/leads";
+import { addLeadNote, createLead } from "@/lib/leads";
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/types";
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
@@ -56,5 +56,44 @@ export async function addLeadNoteAction(leadId: string, note: string): Promise<{
   }
 
   revalidatePath(`/dashboard/leads/${leadId}`);
+  return { error: null };
+}
+
+export interface CreateLeadFormInput {
+  name: string;
+  phone: string;
+  email: string;
+  service: string;
+  status: LeadStatus;
+  valueEstimate: string;
+}
+
+export async function createLeadAction(input: CreateLeadFormInput): Promise<{ error: string | null }> {
+  const name = input.name.trim();
+  if (!name) {
+    return { error: "El nombre es obligatorio." };
+  }
+  if (!LEAD_STATUSES.includes(input.status)) {
+    return { error: "Estado no válido." };
+  }
+
+  const value = Number.parseFloat(input.valueEstimate.replace(",", "."));
+
+  const { business } = await getCurrentBusiness();
+  try {
+    await createLead(business.id, {
+      name,
+      phone: input.phone.trim() || null,
+      email: input.email.trim() || null,
+      service: input.service.trim() || null,
+      status: input.status,
+      value_estimate: Number.isNaN(value) ? 0 : Math.max(0, value),
+    });
+  } catch {
+    return { error: "No se pudo crear el contacto. Inténtalo de nuevo." };
+  }
+
+  revalidatePath("/dashboard/leads");
+  revalidatePath("/dashboard");
   return { error: null };
 }

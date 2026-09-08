@@ -48,23 +48,23 @@ export function OpportunitiesChart({ data }: OpportunitiesChartProps) {
               <stop offset="100%" stopColor="#f4611a" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#232833" strokeDasharray="4 4" />
+          <CartesianGrid vertical={false} stroke="#1f2c48" strokeDasharray="4 4" />
           <XAxis
             dataKey="date"
             tickFormatter={formatDateShort}
-            tick={{ fontSize: 11, fill: "#747c89" }}
+            tick={{ fontSize: 11, fill: "#6b84ab" }}
             axisLine={false}
             tickLine={false}
             minTickGap={28}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#747c89" }}
+            tick={{ fontSize: 11, fill: "#6b84ab" }}
             axisLine={false}
             tickLine={false}
             width={28}
             allowDecimals={false}
           />
-          <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#363c4a", strokeDasharray: 4 }} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#324768", strokeDasharray: 4 }} />
           <Area
             type="monotone"
             dataKey="count"

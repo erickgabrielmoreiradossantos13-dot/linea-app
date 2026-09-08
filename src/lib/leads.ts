@@ -1,16 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { generateDemoLeads } from "@/lib/demo/data";
-import { getDemoLeadOverrides, getDemoLeadNotes, addDemoLeadNote } from "@/lib/demo/store";
+import {
+  getDemoLeadOverrides,
+  getDemoLeadNotes,
+  addDemoLeadNote,
+  getDemoExtraLeads,
+  addDemoExtraLead,
+} from "@/lib/demo/store";
 import { TRAFFIC_SOURCE_LABELS } from "@/lib/types";
 import type { Lead, LeadNote, LeadStatus } from "@/lib/types";
 
 export async function getLeads(businessId: string): Promise<Lead[]> {
   if (IS_DEMO_MODE) {
     const overrides = await getDemoLeadOverrides();
-    return generateDemoLeads().map((lead) =>
+    const extra = await getDemoExtraLeads();
+    const generated = generateDemoLeads().map((lead) =>
       overrides[lead.id] ? { ...lead, status: overrides[lead.id] as LeadStatus } : lead
     );
+    return [...extra, ...generated];
   }
 
   const supabase = await createClient();
@@ -22,6 +30,52 @@ export async function getLeads(businessId: string): Promise<Lead[]> {
     .limit(500);
 
   return (data as Lead[]) ?? [];
+}
+
+export interface CreateLeadInput {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  service: string | null;
+  status: LeadStatus;
+  value_estimate: number;
+}
+
+export async function createLead(businessId: string, input: CreateLeadInput): Promise<void> {
+  if (IS_DEMO_MODE) {
+    await addDemoExtraLead({
+      id: `demo-manual-${Date.now()}`,
+      business_id: businessId,
+      name: input.name,
+      phone: input.phone,
+      email: input.email,
+      service: input.service,
+      source: "manual",
+      status: input.status,
+      value_estimate: input.value_estimate,
+      created_at: new Date().toISOString(),
+      traffic_source: null,
+      traffic_medium: null,
+      campaign: null,
+      landing_page: null,
+      referrer: null,
+    });
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("leads").insert({
+    business_id: businessId,
+    name: input.name,
+    phone: input.phone,
+    email: input.email,
+    service: input.service,
+    source: "manual",
+    status: input.status,
+    value_estimate: input.value_estimate,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export async function getLeadById(businessId: string, leadId: string): Promise<Lead | null> {

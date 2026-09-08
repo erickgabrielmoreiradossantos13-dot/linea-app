@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import type { LeadNote, LeadStatus, SupportRequest } from "@/lib/types";
+import type { Lead, LeadNote, LeadStatus, SupportComment, SupportRequest } from "@/lib/types";
 
 const SESSION_COOKIE = "linea_demo_session";
 const LEADS_COOKIE = "linea_demo_leads";
@@ -8,6 +8,9 @@ const SITE_COOKIE = "linea_demo_site";
 const SITE_LOG_COOKIE = "linea_demo_site_log";
 const SUPPORT_COOKIE = "linea_demo_support";
 const LEAD_NOTES_COOKIE = "linea_demo_lead_notes";
+const EXTRA_LEADS_COOKIE = "linea_demo_extra_leads";
+const INTEGRATIONS_COOKIE = "linea_demo_integrations";
+const SUPPORT_COMMENTS_COOKIE = "linea_demo_support_comments";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -164,4 +167,64 @@ export async function addDemoLeadNote(note: LeadNote) {
   const forLead = [note, ...(current[note.lead_id] ?? [])].slice(0, 30);
   const updated = { ...current, [note.lead_id]: forLead };
   store.set(LEAD_NOTES_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
+}
+
+export async function getDemoExtraLeads(): Promise<Lead[]> {
+  const store = await cookies();
+  const raw = store.get(EXTRA_LEADS_COOKIE)?.value;
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as Lead[];
+  } catch {
+    return [];
+  }
+}
+
+export async function addDemoExtraLead(lead: Lead) {
+  const store = await cookies();
+  const current = await getDemoExtraLeads();
+  const updated = [lead, ...current].slice(0, 50);
+  store.set(EXTRA_LEADS_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
+}
+
+interface DemoIntegrations {
+  ga4_measurement_id: string | null;
+  gtm_container_id: string | null;
+  google_ads_conversion_id: string | null;
+  meta_pixel_id: string | null;
+}
+
+export async function getDemoIntegrationSettings(): Promise<Partial<DemoIntegrations>> {
+  const store = await cookies();
+  const raw = store.get(INTEGRATIONS_COOKIE)?.value;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Partial<DemoIntegrations>;
+  } catch {
+    return {};
+  }
+}
+
+export async function setDemoIntegrationSettings(data: DemoIntegrations) {
+  const store = await cookies();
+  store.set(INTEGRATIONS_COOKIE, JSON.stringify(data), COOKIE_OPTS);
+}
+
+export async function getDemoSupportComments(): Promise<Record<string, SupportComment[]>> {
+  const store = await cookies();
+  const raw = store.get(SUPPORT_COMMENTS_COOKIE)?.value;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, SupportComment[]>;
+  } catch {
+    return {};
+  }
+}
+
+export async function addDemoSupportComment(comment: SupportComment) {
+  const store = await cookies();
+  const current = await getDemoSupportComments();
+  const forRequest = [...(current[comment.request_id] ?? []), comment];
+  const updated = { ...current, [comment.request_id]: forRequest };
+  store.set(SUPPORT_COMMENTS_COOKIE, JSON.stringify(updated), COOKIE_OPTS);
 }

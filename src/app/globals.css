@@ -3,23 +3,32 @@
 @tailwind utilities;
 
 /**
- * Design tokens de marca Línea Sur. Fuente de verdad documentada: los mismos
- * valores existen como paletas de Tailwind (brand, secondary, violet, sky,
- * teal, emerald, orange, red) para uso en clases utilitarias; estas
- * variables quedan disponibles para cualquier CSS que necesite el valor
- * directo (p. ej. SVGs inline de gráficas).
+ * Design tokens de marca Línea Sur — fuente de verdad única.
+ *
+ * Jerarquía (ver globals.css / tailwind.config.ts):
+ *  - AZUL (carbon, brand-blue): estructural, fondo dominante y detalles.
+ *  - NARANJA (primary-orange / brand-*): énfasis — CTA, selección, progreso,
+ *    Línea Score, navegación activa. Deliberadamente escaso: llama la
+ *    atención precisamente por no estar en todas partes.
+ *  - Verde/rojo/ámbar: solo estados semánticos reales (éxito/error/aviso).
+ *
+ * Estas variables son la MISMA paleta expuesta como utilidades de Tailwind
+ * (bg-background, bg-surface, text-text-secondary, border-border,
+ * bg-carbon-900, text-brand-500...) — nunca un color nuevo hardcodeado por
+ * componente.
  */
 :root {
-  --brand-primary: #4640d6;
-  --brand-primary-light: #5b63f0;
-  --brand-secondary: #e2503f;
-  --brand-secondary-light: #ff6b5b;
-  --accent-purple: #7c3aed;
-  --accent-blue: #0284c7;
-  --accent-cyan: #0d9488;
-  --success: #059669;
-  --warning: #ea580c;
-  --danger: #dc2626;
+  --background: #060a14;
+  --surface: #0b1220;
+  --surface-hover: #141d33;
+  --border: #1f2c48;
+  --primary-orange: #f4611a;
+  --brand-blue: #3b6fd6;
+  --text-primary: #f2f5fa;
+  --text-secondary: #9aacc9;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
 @layer base {
@@ -63,47 +72,47 @@
 }
 .dashboard-dark .bg-white,
 .dashboard-dark .to-white {
-  --tw-gradient-to: #12151c;
-  background-color: #12151c;
+  --tw-gradient-to: var(--surface);
+  background-color: var(--surface);
 }
 .dashboard-dark .border-ink-100 {
-  border-color: #232833;
+  border-color: var(--border);
 }
 .dashboard-dark .border-ink-200 {
-  border-color: #2e3542;
+  border-color: #324768;
 }
 .dashboard-dark .bg-ink-50 {
-  background-color: #171b23;
+  background-color: var(--surface-hover);
 }
 .dashboard-dark .bg-ink-50\/40 {
-  background-color: rgba(23, 27, 35, 0.6);
+  background-color: rgba(20, 29, 51, 0.6);
 }
 .dashboard-dark .hover\:bg-white:hover {
-  background-color: #191d26;
+  background-color: var(--surface-hover);
 }
 .dashboard-dark .bg-ink-100 {
-  background-color: #1f2430;
+  background-color: var(--border);
 }
 .dashboard-dark .text-ink-900 {
-  color: #f5f6f8;
+  color: var(--text-primary);
 }
 .dashboard-dark .text-ink-800 {
-  color: #e5e7eb;
+  color: #e1e7f1;
 }
 .dashboard-dark .text-ink-700 {
-  color: #cbd0d8;
+  color: #c3cee2;
 }
 .dashboard-dark .text-ink-600 {
-  color: #aab0bb;
+  color: var(--text-secondary);
 }
 .dashboard-dark .text-ink-500 {
-  color: #88909c;
+  color: #82a0c4;
 }
 .dashboard-dark .text-ink-400 {
-  color: #747c89;
+  color: #6b84ab;
 }
 .dashboard-dark .text-ink-300 {
-  color: #5b6270;
+  color: #526690;
 }
 .dashboard-dark .shadow-card,
 .dashboard-dark .shadow-card-hover {

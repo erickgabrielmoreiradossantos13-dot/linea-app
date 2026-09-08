@@ -50,7 +50,7 @@ export function LineaScore({ result }: { result: LineaScoreResult }) {
     <div className="flex flex-col items-center py-2">
       <div className="relative h-36 w-36">
         <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
-          <circle cx="64" cy="64" r={radius} fill="none" stroke="#232833" strokeWidth="10" />
+          <circle cx="64" cy="64" r={radius} fill="none" stroke="#1f2c48" strokeWidth="10" />
           <circle
             cx="64"
             cy="64"

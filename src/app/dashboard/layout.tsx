@@ -8,7 +8,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [{ business, userEmail }, staff] = await Promise.all([getCurrentBusiness(), isLineaStaff()]);
+  const [{ business, userEmail, isViewingAsStaff }, staff] = await Promise.all([
+    getCurrentBusiness(),
+    isLineaStaff(),
+  ]);
 
   return (
     <div className="flex min-h-screen bg-[#fafafa] print:bg-white">
@@ -17,7 +20,12 @@ export default async function DashboardLayout({
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="print:hidden">
-          <Topbar businessName={business.name} userEmail={userEmail} isStaff={staff} />
+          <Topbar
+            businessName={business.name}
+            userEmail={userEmail}
+            isStaff={staff}
+            isViewingAsStaff={isViewingAsStaff}
+          />
         </div>
         <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 print:p-0">{children}</main>
       </div>
