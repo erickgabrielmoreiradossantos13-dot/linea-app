@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SUPPORT_CATEGORY_LABELS, SUPPORT_STATUS_LABELS } from "@/lib/types";
 import type { SupportRequest, SupportStatus } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -15,7 +16,12 @@ export function SupportRequestCard({ request }: { request: SupportRequest }) {
     <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-[15px] font-semibold text-ink-900">{request.title}</p>
+          <Link
+            href={`/dashboard/support/${request.id}`}
+            className="text-[15px] font-semibold text-ink-900 hover:text-brand-600 hover:underline"
+          >
+            {request.title}
+          </Link>
           <p className="mt-1 text-xs text-ink-400">
             {SUPPORT_CATEGORY_LABELS[request.category]} · {formatDate(request.created_at)}
           </p>
