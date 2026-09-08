@@ -1,8 +1,33 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
+import { isLineaStaff } from "@/lib/staff";
+import { STAFF_VIEW_COOKIE } from "@/lib/supabase/business";
+
+const VIEW_COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 8,
+};
+
+/** Entra al panel de un cliente como staff de Línea Sur (no cambia de usuario, solo de proyecto activo). */
+export async function viewAsBusinessAction(businessId: string) {
+  const staff = await isLineaStaff();
+  if (!staff) throw new Error("No autorizado.");
+
+  (await cookies()).set(STAFF_VIEW_COOKIE, businessId, VIEW_COOKIE_OPTS);
+  redirect("/dashboard");
+}
+
+export async function exitBusinessViewAction() {
+  (await cookies()).delete(STAFF_VIEW_COOKIE);
+  redirect("/dashboard/admin/sites");
+}
 
 export interface CreateSiteInput {
   businessId: string;
