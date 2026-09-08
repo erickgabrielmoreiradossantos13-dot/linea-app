@@ -1,4 +1,4 @@
-import { MessageCircle, FileText, Phone } from "lucide-react";
+import { MessageCircle, FileText, Phone, UserPlus } from "lucide-react";
 import type { LeadSource } from "@/lib/types";
 import { LEAD_SOURCE_LABELS } from "@/lib/types";
 
@@ -6,12 +6,14 @@ const SOURCE_ICON: Record<LeadSource, typeof MessageCircle> = {
   whatsapp: MessageCircle,
   formulario: FileText,
   llamada: Phone,
+  manual: UserPlus,
 };
 
 const SOURCE_COLOR: Record<LeadSource, string> = {
   whatsapp: "text-emerald-600",
   formulario: "text-brand-600",
   llamada: "text-amber-600",
+  manual: "text-ink-500",
 };
 
 export function SourceBadge({ source }: { source: LeadSource }) {

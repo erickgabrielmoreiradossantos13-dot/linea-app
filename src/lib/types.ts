@@ -1,6 +1,6 @@
-export type LeadSource = "whatsapp" | "formulario" | "llamada";
+export type LeadSource = "whatsapp" | "formulario" | "llamada" | "manual";
 
-export type LeadStatus = "nuevo" | "contactado" | "cita" | "ganado" | "perdido";
+export type LeadStatus = "nuevo" | "contactado" | "negociacion" | "ganado" | "perdido";
 
 export type TrafficSource =
   | "google"
@@ -62,6 +62,15 @@ export interface Lead {
   campaign: string | null;
   landing_page: string | null;
   referrer: string | null;
+}
+
+export interface IntegrationSettings {
+  business_id: string;
+  ga4_measurement_id: string | null;
+  gtm_container_id: string | null;
+  google_ads_conversion_id: string | null;
+  meta_pixel_id: string | null;
+  updated_at: string;
 }
 
 export interface LeadNote {
@@ -128,12 +137,22 @@ export interface SupportRequest {
   updated_at: string;
 }
 
-export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cita", "ganado", "perdido"];
+export interface SupportComment {
+  id: string;
+  request_id: string;
+  business_id: string;
+  author_email: string | null;
+  is_staff: boolean;
+  comment: string;
+  created_at: string;
+}
+
+export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "contactado", "negociacion", "ganado", "perdido"];
 
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   nuevo: "Nuevo",
   contactado: "Contactado",
-  cita: "Cita",
+  negociacion: "Negociación",
   ganado: "Ganado",
   perdido: "Perdido",
 };
@@ -142,6 +161,7 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   whatsapp: "WhatsApp",
   formulario: "Formulario",
   llamada: "Llamada",
+  manual: "Añadido manualmente",
 };
 
 export const TRAFFIC_SOURCE_LABELS: Record<TrafficSource, string> = {

@@ -13,7 +13,7 @@ interface StatusSelectProps {
 const STATUS_STYLES: Record<LeadStatus, string> = {
   nuevo: "bg-brand-50 text-brand-700 border-brand-200",
   contactado: "bg-amber-50 text-amber-700 border-amber-200",
-  cita: "bg-violet-50 text-violet-700 border-violet-200",
+  negociacion: "bg-violet-50 text-violet-700 border-violet-200",
   ganado: "bg-emerald-50 text-emerald-700 border-emerald-200",
   perdido: "bg-ink-100 text-ink-500 border-ink-200",
 };

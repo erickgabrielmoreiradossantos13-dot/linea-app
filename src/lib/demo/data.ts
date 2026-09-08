@@ -41,7 +41,7 @@ const SURNAMES = [
 const SERVICES = ["Implantes", "Ortodoncia", "Estética dental", "Revisión general", "Blanqueamiento"];
 const PRICES = [450, 300, 180, 60, 90];
 const STATUSES: LeadStatus[] = [
-  "nuevo", "nuevo", "contactado", "contactado", "cita", "ganado", "ganado", "perdido", "nuevo", "contactado",
+  "nuevo", "nuevo", "contactado", "contactado", "negociacion", "ganado", "ganado", "perdido", "nuevo", "contactado",
 ];
 
 const TOTAL_LEADS = 83;
