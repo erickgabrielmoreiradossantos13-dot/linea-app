@@ -13,6 +13,8 @@ import {
   Settings,
   ShieldCheck,
   LifeBuoy,
+  Plug,
+  FileSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LineaMark } from "@/components/ui/logo";
@@ -52,7 +54,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Tu web",
-    items: [{ href: "/dashboard/website", label: "Mi Web", icon: LayoutTemplate, exact: false }],
+    items: [
+      { href: "/dashboard/website", label: "Mi Web", icon: LayoutTemplate, exact: false },
+      { href: "/dashboard/seo", label: "SEO", icon: FileSearch, exact: false },
+      { href: "/dashboard/integrations", label: "Integraciones", icon: Plug, exact: false },
+    ],
   },
   {
     label: "Cuenta",
