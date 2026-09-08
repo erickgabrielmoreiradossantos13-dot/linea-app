@@ -29,7 +29,7 @@ export function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900 disabled:opacity-60"
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-carbon-700 bg-carbon-900 text-carbon-300 transition-colors hover:bg-carbon-800 hover:text-carbon-50 disabled:opacity-60"
       aria-label="Cerrar sesión"
       title="Cerrar sesión"
     >

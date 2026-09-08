@@ -46,3 +46,99 @@
     @apply bg-ink-200 rounded-full;
   }
 }
+
+/**
+ * Modo oscuro de la pantalla de Inicio (Dashboard), Fase de identidad visual.
+ *
+ * Alcance deliberadamente acotado: estas reglas solo se activan dentro de
+ * `.dashboard-dark` (el contenedor raíz de /dashboard/page.tsx). El resto de
+ * pantallas (Contactos, Google, Editor, etc.) siguen usando exactamente los
+ * mismos componentes compartidos (Card, EmptyState, StatCard...) sin ningún
+ * cambio visual, porque no tienen ese contenedor como antecesor. Es una
+ * sobreescritura de las clases de utilidad ya existentes (misma cascada CSS,
+ * mayor especificidad), no un sistema de tokens nuevo ni un rediseño.
+ */
+.dashboard-dark {
+  color-scheme: dark;
+}
+.dashboard-dark .bg-white,
+.dashboard-dark .to-white {
+  --tw-gradient-to: #12151c;
+  background-color: #12151c;
+}
+.dashboard-dark .border-ink-100 {
+  border-color: #232833;
+}
+.dashboard-dark .border-ink-200 {
+  border-color: #2e3542;
+}
+.dashboard-dark .bg-ink-50 {
+  background-color: #171b23;
+}
+.dashboard-dark .bg-ink-50\/40 {
+  background-color: rgba(23, 27, 35, 0.6);
+}
+.dashboard-dark .hover\:bg-white:hover {
+  background-color: #191d26;
+}
+.dashboard-dark .bg-ink-100 {
+  background-color: #1f2430;
+}
+.dashboard-dark .text-ink-900 {
+  color: #f5f6f8;
+}
+.dashboard-dark .text-ink-800 {
+  color: #e5e7eb;
+}
+.dashboard-dark .text-ink-700 {
+  color: #cbd0d8;
+}
+.dashboard-dark .text-ink-600 {
+  color: #aab0bb;
+}
+.dashboard-dark .text-ink-500 {
+  color: #88909c;
+}
+.dashboard-dark .text-ink-400 {
+  color: #747c89;
+}
+.dashboard-dark .text-ink-300 {
+  color: #5b6270;
+}
+.dashboard-dark .shadow-card,
+.dashboard-dark .shadow-card-hover {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.35), 0 1px 8px -1px rgb(0 0 0 / 0.35);
+}
+.dashboard-dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.14);
+}
+.dashboard-dark .text-red-700 {
+  color: #fca5a5;
+}
+.dashboard-dark .bg-orange-50 {
+  background-color: rgba(244, 97, 26, 0.16);
+}
+.dashboard-dark .text-orange-700 {
+  color: #ffb27a;
+}
+.dashboard-dark .bg-violet-50 {
+  background-color: rgba(139, 92, 246, 0.16);
+}
+.dashboard-dark .text-violet-700 {
+  color: #c4b5fd;
+}
+.dashboard-dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+.dashboard-dark .text-emerald-700 {
+  color: #6ee7b7;
+}
+.dashboard-dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.16);
+}
+.dashboard-dark .text-amber-700 {
+  color: #fcd34d;
+}
+.dashboard-dark .bg-brand-50 {
+  background-color: rgba(244, 97, 26, 0.14);
+}

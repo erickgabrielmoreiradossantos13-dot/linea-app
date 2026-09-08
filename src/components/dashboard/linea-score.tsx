@@ -6,10 +6,10 @@ import { SCORE_COMPONENT_LABELS, type LineaScoreResult } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
 
 function getScoreColor(score: number) {
-  if (score >= 75) return { stroke: "#10b981", text: "text-emerald-600", bar: "bg-emerald-500" };
-  if (score >= 50) return { stroke: "#5b63f0", text: "text-brand-600", bar: "bg-brand-500" };
-  if (score >= 25) return { stroke: "#f59e0b", text: "text-amber-600", bar: "bg-amber-500" };
-  return { stroke: "#ef4444", text: "text-red-600", bar: "bg-red-500" };
+  if (score >= 75) return { stroke: "#10b981", text: "text-emerald-500", bar: "bg-emerald-500" };
+  if (score >= 50) return { stroke: "#f4611a", text: "text-brand-500", bar: "bg-brand-500" };
+  if (score >= 25) return { stroke: "#f59e0b", text: "text-amber-500", bar: "bg-amber-500" };
+  return { stroke: "#ef4444", text: "text-red-500", bar: "bg-red-500" };
 }
 
 export function LineaScore({ result }: { result: LineaScoreResult }) {
@@ -50,7 +50,7 @@ export function LineaScore({ result }: { result: LineaScoreResult }) {
     <div className="flex flex-col items-center py-2">
       <div className="relative h-36 w-36">
         <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
-          <circle cx="64" cy="64" r={radius} fill="none" stroke="#eeeef0" strokeWidth="10" />
+          <circle cx="64" cy="64" r={radius} fill="none" stroke="#232833" strokeWidth="10" />
           <circle
             cx="64"
             cy="64"
