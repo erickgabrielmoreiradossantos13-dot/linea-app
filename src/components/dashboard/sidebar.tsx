@@ -15,7 +15,7 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineaLogo } from "@/components/ui/logo";
+import { LineaMark } from "@/components/ui/logo";
 
 interface NavItem {
   href: string;
@@ -86,7 +86,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
       href={item.href}
       className={cn(
         "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 active:scale-[0.98]",
-        isActive ? "bg-ink-900 text-white shadow-sm" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
+        isActive ? "bg-brand-500/15 text-brand-400" : "text-carbon-300 hover:bg-carbon-800 hover:text-carbon-50"
       )}
     >
       {isActive && (
@@ -106,15 +106,16 @@ export function Sidebar({ isStaff }: { isStaff: boolean }) {
   const groups = getNavGroups(isStaff);
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-ink-100 bg-white/70 backdrop-blur-sm lg:flex">
-      <div className="flex h-16 items-center px-6">
-        <LineaLogo />
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-carbon-800 bg-carbon-950 lg:flex">
+      <div className="flex h-16 items-center gap-2.5 px-6">
+        <LineaMark />
+        <span className="text-[15px] font-semibold tracking-tight text-carbon-50">Línea App</span>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-2">
         {groups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-300">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-carbon-500">
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -126,8 +127,8 @@ export function Sidebar({ isStaff }: { isStaff: boolean }) {
         ))}
       </nav>
 
-      <div className="border-t border-ink-100 p-4">
-        <p className="text-[11px] leading-relaxed text-ink-400">
+      <div className="border-t border-carbon-800 p-4">
+        <p className="text-[11px] leading-relaxed text-carbon-400">
           Línea App · V0.1
           <br />
           Panel de gestión para negocios

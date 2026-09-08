@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
+import { getCurrentBusiness } from "@/lib/supabase/business";
 import { setDemoLeadOverride } from "@/lib/demo/store";
+import { addLeadNote } from "@/lib/leads";
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/types";
 
 export async function updateLeadStatus(leadId: string, status: LeadStatus) {
@@ -18,8 +20,16 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
     return;
   }
 
+  // Se acota explícitamente por el negocio de la sesión (además de RLS): así
+  // un lead_id de otro negocio nunca se actualiza, en vez de depender solo
+  // de que la policy lo bloquee en silencio.
+  const { business } = await getCurrentBusiness();
   const supabase = await createClient();
-  const { error } = await supabase.from("leads").update({ status }).eq("id", leadId);
+  const { error } = await supabase
+    .from("leads")
+    .update({ status })
+    .eq("id", leadId)
+    .eq("business_id", business.id);
 
   if (error) {
     throw new Error(error.message);
@@ -27,4 +37,24 @@ export async function updateLeadStatus(leadId: string, status: LeadStatus) {
 
   revalidatePath("/dashboard/leads");
   revalidatePath("/dashboard");
+}
+
+export async function addLeadNoteAction(leadId: string, note: string): Promise<{ error: string | null }> {
+  const trimmed = note.trim();
+  if (!trimmed) {
+    return { error: "Escribe algo antes de guardar la nota." };
+  }
+  if (trimmed.length > 2000) {
+    return { error: "La nota es demasiado larga (máximo 2000 caracteres)." };
+  }
+
+  const { business } = await getCurrentBusiness();
+  try {
+    await addLeadNote(business.id, leadId, trimmed);
+  } catch {
+    return { error: "No se pudo guardar la nota. Inténtalo de nuevo." };
+  }
+
+  revalidatePath(`/dashboard/leads/${leadId}`);
+  return { error: null };
 }

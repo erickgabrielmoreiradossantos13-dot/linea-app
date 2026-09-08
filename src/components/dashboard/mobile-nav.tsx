@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LineaLogo } from "@/components/ui/logo";
+import { LineaMark } from "@/components/ui/logo";
 import { getNavItems } from "./sidebar";
 
 export function MobileNav({ isStaff }: { isStaff: boolean }) {
@@ -17,7 +17,7 @@ export function MobileNav({ isStaff }: { isStaff: boolean }) {
     <div className="lg:hidden">
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-carbon-700 bg-carbon-900 text-carbon-300"
         aria-label="Abrir menú"
       >
         <Menu className="h-4 w-4" />
@@ -26,15 +26,18 @@ export function MobileNav({ isStaff }: { isStaff: boolean }) {
       {open && (
         <div className="fixed inset-0 z-50 flex">
           <div
-            className="absolute inset-0 bg-ink-950/40 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
-          <div className="relative flex h-full w-72 flex-col bg-white shadow-popover">
+          <div className="relative flex h-full w-72 flex-col bg-carbon-950 shadow-popover">
             <div className="flex h-16 items-center justify-between px-5">
-              <LineaLogo />
+              <div className="flex items-center gap-2.5">
+                <LineaMark />
+                <span className="text-[15px] font-semibold tracking-tight text-carbon-50">Línea App</span>
+              </div>
               <button
                 onClick={() => setOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-carbon-400 hover:bg-carbon-800"
                 aria-label="Cerrar menú"
               >
                 <X className="h-4 w-4" />
@@ -56,8 +59,8 @@ export function MobileNav({ isStaff }: { isStaff: boolean }) {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-ink-900 text-white"
-                        : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
+                        ? "bg-brand-500/15 text-brand-400"
+                        : "text-carbon-300 hover:bg-carbon-800 hover:text-carbon-50"
                     )}
                   >
                     <Icon className="h-4 w-4" strokeWidth={2} />

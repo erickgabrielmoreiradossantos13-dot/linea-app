@@ -2,7 +2,6 @@ import type { LeadSource, LeadStatus, TrafficSource } from "@/lib/types";
 import type { DashboardMetrics } from "@/lib/dashboard";
 import { computeDelta } from "@/lib/dashboard";
 import {
-  DEMO_BUSINESS,
   DEMO_PREVIOUS_TOTAL_LEADS,
   DEMO_PREVIOUS_TOTAL_VISITORS,
   DEMO_TOTAL_VISITORS,
@@ -69,6 +68,5 @@ export async function getDemoDashboardMetrics(): Promise<DashboardMetrics> {
     leadsBySource,
     trafficSources,
     opportunitiesTrend,
-    lineaScore: DEMO_BUSINESS.linea_score,
   };
 }

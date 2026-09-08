@@ -43,35 +43,35 @@ export function OpportunitiesChart({ data }: OpportunitiesChartProps) {
         <AreaChart data={data} margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
           <defs>
             <linearGradient id="opportunitiesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#5b63f0" stopOpacity={0.35} />
-              <stop offset="45%" stopColor="#5b63f0" stopOpacity={0.12} />
-              <stop offset="100%" stopColor="#5b63f0" stopOpacity={0} />
+              <stop offset="0%" stopColor="#f4611a" stopOpacity={0.4} />
+              <stop offset="45%" stopColor="#f4611a" stopOpacity={0.14} />
+              <stop offset="100%" stopColor="#f4611a" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#eeeef0" strokeDasharray="4 4" />
+          <CartesianGrid vertical={false} stroke="#232833" strokeDasharray="4 4" />
           <XAxis
             dataKey="date"
             tickFormatter={formatDateShort}
-            tick={{ fontSize: 11, fill: "#8b8b9a" }}
+            tick={{ fontSize: 11, fill: "#747c89" }}
             axisLine={false}
             tickLine={false}
             minTickGap={28}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#8b8b9a" }}
+            tick={{ fontSize: 11, fill: "#747c89" }}
             axisLine={false}
             tickLine={false}
             width={28}
             allowDecimals={false}
           />
-          <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#c3caff", strokeDasharray: 4 }} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#363c4a", strokeDasharray: 4 }} />
           <Area
             type="monotone"
             dataKey="count"
-            stroke="#4640d6"
+            stroke="#ff7a35"
             strokeWidth={2.25}
             fill="url(#opportunitiesGradient)"
-            activeDot={{ r: 5, stroke: "#ffffff", strokeWidth: 2 }}
+            activeDot={{ r: 5, stroke: "#12151c", strokeWidth: 2 }}
             animationDuration={800}
             animationEasing="ease-out"
           />

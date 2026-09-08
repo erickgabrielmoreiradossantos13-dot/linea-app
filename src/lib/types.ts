@@ -64,6 +64,15 @@ export interface Lead {
   referrer: string | null;
 }
 
+export interface LeadNote {
+  id: string;
+  lead_id: string;
+  business_id: string;
+  author_email: string | null;
+  note: string;
+  created_at: string;
+}
+
 export interface WebsiteContent {
   id: string;
   business_id: string;

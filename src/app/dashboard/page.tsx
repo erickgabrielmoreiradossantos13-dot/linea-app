@@ -6,6 +6,7 @@ import { getDashboardMetrics } from "@/lib/dashboard";
 import { getLeads } from "@/lib/leads";
 import { getGoogleVisibility } from "@/lib/google";
 import { getImprovementPlan } from "@/lib/plan";
+import { getLineaScore } from "@/lib/score";
 import { getOpportunityInsights, getDemoSeoInsights } from "@/lib/insights";
 import { IS_DEMO_MODE } from "@/lib/demo/config";
 import { GreetingHeader } from "@/components/dashboard/greeting-header";
@@ -29,11 +30,12 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const { business } = await getCurrentBusiness();
   const [metrics, leads, googleVisibility, planItems] = await Promise.all([
-    getDashboardMetrics(business.id, business.linea_score),
+    getDashboardMetrics(business.id),
     getLeads(business.id),
     getGoogleVisibility(),
     getImprovementPlan(business.id),
   ]);
+  const lineaScore = await getLineaScore(business.id, metrics.conversionRate, { leads, visibility: googleVisibility });
 
   const insights = [
     ...getOpportunityInsights(metrics, leads),
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
   const featuredInsights = insights.slice(0, 2);
 
   return (
-    <div>
+    <div className="dashboard-dark -mx-4 -my-6 min-h-[calc(100vh-4rem)] bg-carbon-950 px-4 py-6 sm:-mx-8 sm:-my-8 sm:px-8 sm:py-8">
       <GreetingHeader
         businessName={business.name}
         opportunities={metrics.opportunities}
@@ -111,12 +113,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* 2. Qué necesita tu atención */}
-      <div className="mt-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-ink-900">Qué necesita tu atención</h2>
+      <div className="mt-9">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-[17px] font-semibold tracking-tight text-ink-900">
+            ¿Qué necesita tu atención?
+          </h2>
           <Link
             href="/dashboard/opportunities"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-500 hover:text-brand-400"
           >
             Ver todas <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -138,7 +142,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 3. Evolución */}
-      <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div className="mt-9 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card className="animate-fade-in-up xl:col-span-2" style={{ animationDelay: "220ms" }}>
           <CardHeader>
             <CardTitle>Oportunidades · últimos 30 días</CardTitle>
@@ -162,7 +166,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <CardHeader>
             <CardTitle>Acciones comerciales</CardTitle>
@@ -183,7 +187,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 4-5. Recomendaciones / datos de control */}
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card className="animate-fade-in-up" style={{ animationDelay: "340ms" }}>
           <CardHeader>
             <CardTitle>Valor comercial potencial</CardTitle>
@@ -202,7 +206,7 @@ export default async function DashboardPage() {
             <CardTitle>Línea Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <LineaScore score={metrics.lineaScore} />
+            <LineaScore result={lineaScore} />
           </CardContent>
         </Card>
       </div>

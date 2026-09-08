@@ -4,7 +4,7 @@ export function LineaMark({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-lg bg-ink-900",
+        "flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500",
         className
       )}
     >
