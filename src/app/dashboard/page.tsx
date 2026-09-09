@@ -44,7 +44,7 @@ export default async function DashboardPage() {
   const featuredInsights = insights.slice(0, 2);
 
   return (
-    <div className="dashboard-dark -mx-4 -my-6 min-h-[calc(100vh-4rem)] bg-carbon-950 px-4 py-6 sm:-mx-8 sm:-my-8 sm:px-8 sm:py-8">
+    <div>
       <GreetingHeader
         businessName={business.name}
         opportunities={metrics.opportunities}

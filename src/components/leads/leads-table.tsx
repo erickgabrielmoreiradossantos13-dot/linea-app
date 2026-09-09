@@ -40,7 +40,7 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             {leads.map((lead) => (
               <tr
                 key={lead.id}
-                className="transition-all duration-150 hover:bg-ink-50/60 hover:shadow-[inset_3px_0_0_0_#5b63f0]"
+                className="transition-all duration-150 hover:bg-ink-50/60 hover:shadow-[inset_3px_0_0_0_#3b6fd6]"
               >
                 <td className="whitespace-nowrap px-5 py-3.5 font-medium text-ink-900">
                   <Link href={`/dashboard/leads/${lead.id}`} className="hover:text-brand-600 hover:underline">

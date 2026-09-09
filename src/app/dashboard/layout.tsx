@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   ]);
 
   return (
-    <div className="flex min-h-screen bg-[#fafafa] print:bg-white">
+    <div className="dashboard-dark flex min-h-screen bg-carbon-950 print:bg-white">
       <div className="print:hidden">
         <Sidebar isStaff={staff} />
       </div>

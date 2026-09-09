@@ -75,25 +75,50 @@
   --tw-gradient-to: var(--surface);
   background-color: var(--surface);
 }
-.dashboard-dark .border-ink-100 {
+.dashboard-dark .border-ink-100,
+.dashboard-dark .border-ink-50 {
   border-color: var(--border);
 }
-.dashboard-dark .border-ink-200 {
+.dashboard-dark .border-ink-200,
+.dashboard-dark .hover\:border-ink-200:hover {
   border-color: #324768;
 }
 .dashboard-dark .bg-ink-50 {
   background-color: var(--surface-hover);
 }
+.dashboard-dark .bg-ink-50\/30,
 .dashboard-dark .bg-ink-50\/40 {
   background-color: rgba(20, 29, 51, 0.6);
 }
-.dashboard-dark .hover\:bg-white:hover {
-  background-color: var(--surface-hover);
+.dashboard-dark .bg-ink-50\/50,
+.dashboard-dark .bg-ink-50\/60 {
+  background-color: rgba(20, 29, 51, 0.85);
 }
-.dashboard-dark .bg-ink-100 {
+.dashboard-dark .bg-ink-100\/40 {
   background-color: var(--border);
 }
-.dashboard-dark .text-ink-900 {
+.dashboard-dark .hover\:bg-white:hover,
+.dashboard-dark .hover\:bg-ink-50:hover,
+.dashboard-dark .hover\:bg-ink-50\/60:hover {
+  background-color: var(--surface-hover);
+}
+.dashboard-dark .bg-ink-100,
+.dashboard-dark .hover\:bg-ink-100:hover {
+  background-color: var(--border);
+}
+/* Botones/estados sólidos "principales" (bg-ink-900 + hover:bg-ink-800):
+   pasan a naranja de marca — es la acción/estado que debe destacar. */
+.dashboard-dark .bg-ink-900 {
+  background-color: var(--primary-orange);
+}
+.dashboard-dark .hover\:bg-ink-800:hover {
+  background-color: #e0500f;
+}
+.dashboard-dark .border-ink-900 {
+  border-color: var(--primary-orange);
+}
+.dashboard-dark .text-ink-900,
+.dashboard-dark .hover\:text-ink-900:hover {
   color: var(--text-primary);
 }
 .dashboard-dark .text-ink-800 {
@@ -148,6 +173,23 @@
 .dashboard-dark .text-amber-700 {
   color: #fcd34d;
 }
-.dashboard-dark .bg-brand-50 {
+.dashboard-dark .bg-brand-50,
+.dashboard-dark .bg-brand-50\/50 {
   background-color: rgba(244, 97, 26, 0.14);
+}
+.dashboard-dark .text-brand-700 {
+  color: #ffb27a;
+}
+.dashboard-dark .border-brand-100,
+.dashboard-dark .border-brand-200 {
+  border-color: rgba(244, 97, 26, 0.3);
+}
+.dashboard-dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.dashboard-dark .border-violet-200 {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+.dashboard-dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.3);
 }
