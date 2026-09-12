@@ -1,27 +1,14 @@
-# dependencies
-/node_modules
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# env
+node_modules
+.npm-cache
+.next
 .env
 .env.local
-.env*.local
-
-# misc
+.vercel
+coverage
+playwright-report
+test-results
+*.log
 .DS_Store
-*.pem
-npm-debug.log*
-next-env.d.ts
-*.tsbuildinfo
 
-# supabase
-/supabase/.temp
-
-# Claude Code local runtime state (keep launch.json)
-.claude/scheduled_tasks.lock
+.vercel
+.env*

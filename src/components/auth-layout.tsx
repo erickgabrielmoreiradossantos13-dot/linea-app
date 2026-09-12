@@ -1,0 +1,2 @@
+import {Logo} from "@/components/logo";
+export function AuthLayout({children}:{children:React.ReactNode}){return <div className="auth-page"><aside className="auth-story"><Logo/><div><h2>Tu negocio.<br/>Tus resultados.<br/><span className="serif-emphasis">Un solo lugar.</span></h2><p>El espacio donde tu presencia digital se convierte en oportunidades, decisiones y próximos pasos.</p></div><small className="muted">Línea Sur Digital Studio</small></aside><main className="auth-content"><div className="auth-card">{children}</div></main></div>;}

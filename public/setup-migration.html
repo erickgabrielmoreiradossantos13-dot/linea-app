@@ -1,0 +1,460 @@
+<!doctype html><html><body><pre>create extension if not exists pgcrypto;
+
+create type public.organization_role as enum (&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;,&#39;VIEWER&#39;);
+create type public.membership_status as enum (&#39;INVITED&#39;,&#39;ACTIVE&#39;,&#39;SUSPENDED&#39;);
+create type public.lead_status as enum (&#39;NEW&#39;,&#39;CONTACTED&#39;,&#39;QUALIFIED&#39;,&#39;MEETING&#39;,&#39;PROPOSAL&#39;,&#39;WON&#39;,&#39;LOST&#39;);
+create type public.website_status as enum (&#39;ACTIVE&#39;,&#39;PAUSED&#39;,&#39;ARCHIVED&#39;);
+create type public.ticket_status as enum (&#39;OPEN&#39;,&#39;IN_PROGRESS&#39;,&#39;WAITING_CUSTOMER&#39;,&#39;RESOLVED&#39;);
+create type public.ticket_priority as enum (&#39;LOW&#39;,&#39;NORMAL&#39;,&#39;HIGH&#39;,&#39;URGENT&#39;);
+
+create table public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  locale text not null default &#39;es-ES&#39;,
+  is_super_admin boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.organizations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 2 and 160),
+  slug text not null unique,
+  plan_code text not null default &#39;LITE&#39;,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+create table public.organization_members (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role public.organization_role not null default &#39;VIEWER&#39;,
+  status public.membership_status not null default &#39;ACTIVE&#39;,
+  created_at timestamptz not null default now(),
+  unique (organization_id, user_id)
+);
+create index organization_members_user_idx on public.organization_members(user_id, status);
+
+create table public.websites (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  name text not null,
+  domain text not null,
+  site_key text not null unique default encode(gen_random_bytes(32), &#39;hex&#39;),
+  allowed_origin text,
+  status public.website_status not null default &#39;ACTIVE&#39;,
+  published_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (organization_id, domain)
+);
+create index websites_org_idx on public.websites(organization_id);
+
+create table public.pages (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  website_id uuid not null references public.websites(id) on delete cascade,
+  path text not null,
+  title text not null,
+  meta_description text,
+  is_indexable boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (website_id, path)
+);
+create index pages_org_idx on public.pages(organization_id);
+
+create table public.content_entries (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  website_id uuid not null references public.websites(id) on delete cascade,
+  content_key text not null,
+  label text not null,
+  value jsonb not null default &#39;null&#39;::jsonb,
+  kind text not null default &#39;text&#39;,
+  updated_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (website_id, content_key)
+);
+create index content_entries_org_idx on public.content_entries(organization_id);
+
+create table public.media (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  website_id uuid references public.websites(id) on delete cascade,
+  storage_path text not null unique,
+  filename text not null,
+  mime_type text not null,
+  bytes bigint not null check (bytes &gt;= 0 and bytes &lt;= 15728640),
+  alt_text text,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+create index media_org_idx on public.media(organization_id);
+
+create table public.leads (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  website_id uuid references public.websites(id) on delete set null,
+  name text not null,
+  email text,
+  phone text,
+  whatsapp text,
+  company text,
+  source text,
+  page_path text,
+  message text,
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  status public.lead_status not null default &#39;NEW&#39;,
+  assigned_to uuid references auth.users(id),
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index leads_org_created_idx on public.leads(organization_id, created_at desc);
+create index leads_org_status_idx on public.leads(organization_id, status);
+
+create table public.lead_notes (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  lead_id uuid not null references public.leads(id) on delete cascade,
+  author_id uuid not null references auth.users(id),
+  note text not null check (char_length(note) between 1 and 5000),
+  created_at timestamptz not null default now()
+);
+create index lead_notes_lead_idx on public.lead_notes(lead_id, created_at);
+
+create table public.analytics_events (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  website_id uuid not null references public.websites(id) on delete cascade,
+  event_type text not null,
+  page_path text,
+  session_id text,
+  source text,
+  medium text,
+  campaign text,
+  occurred_at timestamptz not null default now()
+);
+create index analytics_org_time_idx on public.analytics_events(organization_id, occurred_at desc);
+create index analytics_website_event_idx on public.analytics_events(website_id, event_type, occurred_at desc);
+
+create table public.integrations (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  provider text not null,
+  status text not null default &#39;DISCONNECTED&#39;,
+  config jsonb not null default &#39;{}&#39;::jsonb,
+  last_error text,
+  connected_at timestamptz,
+  updated_at timestamptz not null default now(),
+  unique (organization_id, provider)
+);
+
+create table public.support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  created_by uuid not null references auth.users(id),
+  subject text not null,
+  description text not null,
+  priority public.ticket_priority not null default &#39;NORMAL&#39;,
+  status public.ticket_status not null default &#39;OPEN&#39;,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index support_tickets_org_status_idx on public.support_tickets(organization_id, status);
+
+
+create table public.plans (
+  code text primary key,
+  name text not null,
+  active boolean not null default true,
+  features jsonb not null default &#39;{}&#39;::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+
+insert into public.plans (code, name, features) values
+(&#39;LITE&#39;, &#39;L&#237;nea App Lite&#39;, &#39;{&quot;dashboard&quot;:true,&quot;leads&quot;:true,&quot;content&quot;:true,&quot;support&quot;:true,&quot;site&quot;:false,&quot;media&quot;:false,&quot;analytics&quot;:false,&quot;seo&quot;:false}&#39;::jsonb),
+(&#39;GROWTH&#39;, &#39;Growth&#39;, &#39;{&quot;dashboard&quot;:true,&quot;leads&quot;:true,&quot;site&quot;:true,&quot;content&quot;:true,&quot;media&quot;:true,&quot;analytics&quot;:true,&quot;seo&quot;:true,&quot;support&quot;:true}&#39;::jsonb),
+(&#39;PRO&#39;, &#39;Pro&#39;, &#39;{&quot;dashboard&quot;:true,&quot;leads&quot;:true,&quot;site&quot;:true,&quot;content&quot;:true,&quot;media&quot;:true,&quot;analytics&quot;:true,&quot;seo&quot;:true,&quot;support&quot;:true,&quot;automations&quot;:true}&#39;::jsonb)
+on conflict (code) do update set name = excluded.name, features = excluded.features;
+
+alter table public.organizations
+  add constraint organizations_plan_code_fkey foreign key (plan_code) references public.plans(code);
+
+create table public.subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null unique references public.organizations(id) on delete cascade,
+  provider text not null default &#39;stripe&#39;,
+  provider_customer_id text,
+  provider_subscription_id text unique,
+  plan_code text references public.plans(code),
+  status text not null default &#39;INACTIVE&#39;,
+  current_period_end timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
+  kind text not null,
+  title text not null,
+  body text,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index notifications_user_idx on public.notifications(user_id, read_at, created_at desc);
+
+create table public.audit_logs (
+  id bigint generated always as identity primary key,
+  organization_id uuid references public.organizations(id) on delete set null,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  target_type text,
+  target_id text,
+  metadata jsonb not null default &#39;{}&#39;::jsonb,
+  created_at timestamptz not null default now()
+);
+create index audit_logs_org_time_idx on public.audit_logs(organization_id, created_at desc);
+
+
+create or replace function public.is_super_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select p.is_super_admin from public.profiles p where p.id = auth.uid()), false);
+$$;
+
+create or replace function public.is_org_member(target_org uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.is_super_admin() or exists (
+    select 1
+    from public.organization_members m
+    where m.organization_id = target_org
+      and m.user_id = auth.uid()
+      and m.status = &#39;ACTIVE&#39;
+  );
+$$;
+
+create or replace function public.has_org_role(target_org uuid, allowed_roles public.organization_role[])
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.is_super_admin() or exists (
+    select 1
+    from public.organization_members m
+    where m.organization_id = target_org
+      and m.user_id = auth.uid()
+      and m.status = &#39;ACTIVE&#39;
+      and m.role = any(allowed_roles)
+  );
+$$;
+
+alter table public.profiles enable row level security;
+alter table public.organizations enable row level security;
+alter table public.organization_members enable row level security;
+alter table public.websites enable row level security;
+alter table public.pages enable row level security;
+alter table public.content_entries enable row level security;
+alter table public.media enable row level security;
+alter table public.leads enable row level security;
+alter table public.lead_notes enable row level security;
+alter table public.analytics_events enable row level security;
+alter table public.integrations enable row level security;
+alter table public.support_tickets enable row level security;
+alter table public.plans enable row level security;
+alter table public.subscriptions enable row level security;
+alter table public.notifications enable row level security;
+alter table public.audit_logs enable row level security;
+
+create policy &quot;profile_self_select&quot; on public.profiles for select using (id = auth.uid() or public.is_super_admin());
+create policy &quot;profile_self_update&quot; on public.profiles for update using (id = auth.uid()) with check (id = auth.uid());
+
+create policy &quot;organizations_member_select&quot; on public.organizations for select using (public.is_org_member(id));
+create policy &quot;organizations_admin_update&quot; on public.organizations for update
+  using (public.has_org_role(id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]))
+  with check (public.has_org_role(id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]));
+create policy &quot;members_member_select&quot; on public.organization_members for select using (public.is_org_member(organization_id));
+create policy &quot;members_owner_manage&quot; on public.organization_members for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;]::public.organization_role[]));
+
+create policy &quot;websites_member_select&quot; on public.websites for select using (public.is_org_member(organization_id));
+create policy &quot;websites_admin_write&quot; on public.websites for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]));
+
+create policy &quot;pages_member_select&quot; on public.pages for select using (public.is_org_member(organization_id));
+create policy &quot;pages_editor_write&quot; on public.pages for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]));
+
+create policy &quot;content_member_select&quot; on public.content_entries for select using (public.is_org_member(organization_id));
+create policy &quot;content_editor_write&quot; on public.content_entries for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]));
+
+create policy &quot;media_member_select&quot; on public.media for select using (public.is_org_member(organization_id));
+create policy &quot;media_editor_write&quot; on public.media for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]));
+
+create policy &quot;leads_member_select&quot; on public.leads for select using (public.is_org_member(organization_id));
+create policy &quot;leads_admin_write&quot; on public.leads for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]));
+
+create policy &quot;lead_notes_member_select&quot; on public.lead_notes for select using (public.is_org_member(organization_id));
+create policy &quot;lead_notes_admin_write&quot; on public.lead_notes for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]));
+
+create policy &quot;analytics_member_select&quot; on public.analytics_events for select using (public.is_org_member(organization_id));
+create policy &quot;integrations_member_select&quot; on public.integrations for select using (public.is_org_member(organization_id));
+create policy &quot;integrations_owner_write&quot; on public.integrations for all
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;]::public.organization_role[]));
+
+create policy &quot;tickets_member_select&quot; on public.support_tickets for select using (public.is_org_member(organization_id));
+create policy &quot;tickets_member_insert&quot; on public.support_tickets for insert with check (public.is_org_member(organization_id));
+create policy &quot;tickets_admin_update&quot; on public.support_tickets for update
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]))
+  with check (public.has_org_role(organization_id, array[&#39;OWNER&#39;,&#39;ADMIN&#39;]::public.organization_role[]));
+
+create policy &quot;plans_authenticated_select&quot; on public.plans for select to authenticated using (active = true or public.is_super_admin());
+create policy &quot;subscriptions_member_select&quot; on public.subscriptions for select using (public.is_org_member(organization_id));
+create policy &quot;notifications_user_select&quot; on public.notifications for select using (user_id = auth.uid() or public.is_super_admin());
+create policy &quot;notifications_user_update&quot; on public.notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create policy &quot;audit_member_select&quot; on public.audit_logs for select
+  using (public.has_org_role(organization_id, array[&#39;OWNER&#39;]::public.organization_role[]));
+create policy &quot;audit_actor_insert&quot; on public.audit_logs for insert
+  with check (actor_user_id = auth.uid() and public.is_org_member(organization_id));
+
+
+
+create or replace function public.create_organization_for_current_user(org_name text, org_slug text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_org_id uuid;
+  current_user_id uuid := auth.uid();
+begin
+  if current_user_id is null then
+    raise exception &#39;not_authenticated&#39;;
+  end if;
+  if char_length(trim(org_name)) &lt; 2 or char_length(trim(org_name)) &gt; 160 then
+    raise exception &#39;invalid_org_name&#39;;
+  end if;
+  if org_slug !~ &#39;^[a-z0-9]+(?:-[a-z0-9]+)*$&#39; or char_length(org_slug) &gt; 80 then
+    raise exception &#39;invalid_org_slug&#39;;
+  end if;
+
+  insert into public.organizations (name, slug)
+  values (trim(org_name), org_slug)
+  returning id into new_org_id;
+
+  insert into public.organization_members (organization_id, user_id, role, status)
+  values (new_org_id, current_user_id, &#39;OWNER&#39;, &#39;ACTIVE&#39;);
+
+  insert into public.audit_logs (organization_id, actor_user_id, action, target_type, target_id)
+  values (new_org_id, current_user_id, &#39;organization.created&#39;, &#39;organization&#39;, new_org_id::text);
+
+  return new_org_id;
+end;
+$$;
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, full_name)
+  values (new.id, coalesce(new.raw_user_meta_data -&gt;&gt; &#39;full_name&#39;, new.email))
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();
+
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (&#39;media&#39;, &#39;media&#39;, false, 15728640, array[&#39;image/jpeg&#39;,&#39;image/png&#39;,&#39;image/webp&#39;,&#39;image/avif&#39;])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create policy &quot;media_objects_select&quot; on storage.objects for select to authenticated
+using (
+  bucket_id = &#39;media&#39;
+  and public.is_org_member(((storage.foldername(name))[1])::uuid)
+);
+
+create policy &quot;media_objects_insert&quot; on storage.objects for insert to authenticated
+with check (
+  bucket_id = &#39;media&#39;
+  and public.has_org_role(
+    ((storage.foldername(name))[1])::uuid,
+    array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]
+  )
+);
+
+create policy &quot;media_objects_delete&quot; on storage.objects for delete to authenticated
+using (
+  bucket_id = &#39;media&#39;
+  and public.has_org_role(
+    ((storage.foldername(name))[1])::uuid,
+    array[&#39;OWNER&#39;,&#39;ADMIN&#39;,&#39;EDITOR&#39;]::public.organization_role[]
+  )
+);
+
+-- Explicitly prevent clients from escalating themselves to L&#237;nea Sur super admin
+-- or changing plan/billing fields directly.
+revoke update on public.profiles from authenticated;
+grant update (full_name, locale) on public.profiles to authenticated;
+
+revoke update on public.organizations from authenticated;
+grant update (name, updated_at) on public.organizations to authenticated;
+
+revoke all on function public.is_super_admin() from public;
+revoke all on function public.is_org_member(uuid) from public;
+revoke all on function public.has_org_role(uuid, public.organization_role[]) from public;
+revoke all on function public.create_organization_for_current_user(text, text) from public;
+revoke all on function public.handle_new_user() from public;
+
+grant execute on function public.is_super_admin() to authenticated;
+grant execute on function public.is_org_member(uuid) to authenticated;
+grant execute on function public.has_org_role(uuid, public.organization_role[]) to authenticated;
+grant execute on function public.create_organization_for_current_user(text, text) to authenticated;
+</pre></body></html>
