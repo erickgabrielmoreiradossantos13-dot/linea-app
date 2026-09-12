@@ -215,7 +215,6 @@ export async function addPage(formData: FormData) {
 type ImportStartResult = ActionResult & {
   importId?: string;
   storagePath?: string;
-  token?: string;
 };
 
 export async function beginSiteImport(input: { websiteId: string; filename: string; bytes: number }): Promise<ImportStartResult> {
@@ -231,6 +230,20 @@ export async function beginSiteImport(input: { websiteId: string; filename: stri
     .eq("id", parsed.data.websiteId).eq("organization_id", access.session.organizationId).eq("status", "ACTIVE").maybeSingle();
   if (!website) return { error: "Web não disponível nesta organização." };
 
+  const now = Date.now();
+  await Promise.all([
+    access.supabase.from("site_imports").update({ status: "FAILED", error_message: "Upload expirado; inicia uma nova importação." })
+      .eq("website_id", website.id).eq("organization_id", access.session.organizationId).eq("status", "UPLOADING")
+      .lt("created_at", new Date(now - 10 * 60_000).toISOString()),
+    access.supabase.from("site_imports").update({ status: "FAILED", error_message: "Processamento expirado; inicia uma nova importação." })
+      .eq("website_id", website.id).eq("organization_id", access.session.organizationId).eq("status", "PROCESSING")
+      .lt("created_at", new Date(now - 20 * 60_000).toISOString()),
+  ]);
+  const { data: running } = await access.supabase.from("site_imports").select("id, status")
+    .eq("website_id", website.id).eq("organization_id", access.session.organizationId)
+    .in("status", ["UPLOADING", "PROCESSING"]).limit(1).maybeSingle();
+  if (running) return { error: "Já existe uma importação em curso. Aguarda alguns minutos ou recarrega a página para verificar o estado." };
+
   const importId = randomUUID();
   const storagePath = `${access.session.organizationId}/${website.id}/${importId}/source.zip`;
   const { error: insertError } = await access.supabase.from("site_imports").insert({
@@ -243,12 +256,38 @@ export async function beginSiteImport(input: { websiteId: string; filename: stri
     created_by: access.session.userId,
   });
   if (insertError) return { error: "Não foi possível iniciar a importação." };
-  const { data: signed, error: signedError } = await access.supabase.storage.from("sites").createSignedUploadUrl(storagePath);
-  if (signedError || !signed) {
-    await access.supabase.from("site_imports").delete().eq("id", importId).eq("organization_id", access.session.organizationId);
-    return { error: "Não foi possível preparar o upload seguro." };
-  }
-  return { importId, storagePath, token: signed.token };
+  return { importId, storagePath };
+}
+
+export async function cancelSiteImport(input: { websiteId: string; importId: string }): Promise<ActionResult> {
+  const parsed = z.object({ websiteId: z.string().uuid(), importId: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { error: "Importação inválida." };
+  const access = await requireSiteAdmin();
+  if ("error" in access) return access;
+  const { data: siteImport } = await access.supabase.from("site_imports").select("id, source_zip_path, status")
+    .eq("id", parsed.data.importId).eq("website_id", parsed.data.websiteId)
+    .eq("organization_id", access.session.organizationId).maybeSingle();
+  if (!siteImport || siteImport.status === "READY") return { error: "Esta importação já não pode ser cancelada." };
+  await access.supabase.storage.from("sites").remove([siteImport.source_zip_path]);
+  const { error } = await access.supabase.from("site_imports").update({
+    status: "FAILED",
+    error_message: "Upload cancelado pelo utilizador.",
+    completed_at: new Date().toISOString(),
+  }).eq("id", siteImport.id).eq("organization_id", access.session.organizationId);
+  return error ? { error: "Não foi possível cancelar a importação." } : { success: "Importação cancelada." };
+}
+
+export async function reportSiteImportFailure(input: { websiteId: string; importId: string; message: string }): Promise<void> {
+  const parsed = z.object({ websiteId: z.string().uuid(), importId: z.string().uuid(), message: z.string().trim().min(1).max(500) }).safeParse(input);
+  if (!parsed.success) return;
+  const access = await requireSiteAdmin();
+  if ("error" in access) return;
+  await access.supabase.from("site_imports").update({
+    status: "FAILED",
+    error_message: parsed.data.message,
+    completed_at: new Date().toISOString(),
+  }).eq("id", parsed.data.importId).eq("website_id", parsed.data.websiteId)
+    .eq("organization_id", access.session.organizationId).neq("status", "READY");
 }
 
 async function uploadImportedFiles(

@@ -9,7 +9,7 @@ import { can } from "@/lib/authz";
 import { SiteImportForm } from "@/components/site/site-import-form";
 import { setWebsiteDomain, updatePageSeo } from "./actions";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export default async function SitePage() {
   const session = await getSessionContext();
