@@ -10,12 +10,12 @@ function textValue(value: unknown) {
 }
 
 function demoEditorData(session: SessionContext, websiteId: string): EditorData {
-  const page = { id: "demo-page-home", path: "/", title: "Clínica Dental Málaga", metaDescription: "Tu sonrisa, en buenas manos.", isIndexable: true, hasUnpublishedChanges: false };
+  const page = { id: "demo-page-home", path: "/", title: "Clínica Dental Málaga", metaDescription: "Tu sonrisa, en buenas manos.", isIndexable: true, hasUnpublishedChanges: false, editorMode: "BLOCKS" as const, updatedAt: new Date().toISOString() };
   return {
-    website: { id: websiteId, name: "Web principal", domain: "clinicadentalmalaga.es", publishedAt: new Date().toISOString(), publishAt: null },
+    website: { id: websiteId, name: "Web principal", domain: "clinicadentalmalaga.es", publishedAt: new Date().toISOString(), publishAt: null, sourceMode: "BLOCKS" },
     pages: [page], currentPage: page,
     blocks: [
-      { id: "demo-block-hero", type: "text", position: 0, config: { eyebrow: "Salud y confianza", headingLevel: "h1", tone: "accent" }, isPublished: true, hasUnpublishedChanges: false, entries: [
+      { id: "demo-block-hero", type: "text", position: 0, config: { eyebrow: "Salud y confianza", headingLevel: "h1", tone: "accent" }, isPublished: true, hasUnpublishedChanges: false, selector: null, importedValue: null, entries: [
         { id: "demo-entry-heading", key: "home.hero.heading", label: "Título", kind: "text", value: "Una sonrisa que habla de ti" },
         { id: "demo-entry-body", key: "home.hero.body", label: "Texto", kind: "rich_text", value: "Odontología cercana, clara y pensada para que vuelvas a sonreír con tranquilidad." },
       ] },
@@ -23,7 +23,7 @@ function demoEditorData(session: SessionContext, websiteId: string): EditorData 
         { id: "demo-card-1", title: "Primera visita", body: "Te escuchamos y diseñamos un plan claro." },
         { id: "demo-card-2", title: "Tratamiento", body: "Tecnología y acompañamiento en cada paso." },
         { id: "demo-card-3", title: "Seguimiento", body: "Cuidamos el resultado contigo." },
-      ] }, isPublished: true, hasUnpublishedChanges: false, entries: [{ id: "demo-entry-services", key: "home.services.heading", label: "Título", kind: "text", value: "Todo lo que tu sonrisa necesita" }] },
+      ] }, isPublished: true, hasUnpublishedChanges: false, selector: null, importedValue: null, entries: [{ id: "demo-entry-services", key: "home.services.heading", label: "Título", kind: "text", value: "Todo lo que tu sonrisa necesita" }] },
     ],
     media: [], history: [], role: session.role,
     canEdit: false, canPublish: false, hasDraft: false,
@@ -35,7 +35,7 @@ export async function getEditorData(session: SessionContext, websiteId: string, 
   const supabase = await createSupabaseServerClient();
   const { data: website, error: websiteError } = await supabase
     .from("websites")
-    .select("id, name, domain, published_at, publish_at")
+    .select("id, name, domain, published_at, publish_at, source_mode")
     .eq("id", websiteId)
     .eq("organization_id", session.organizationId)
     .eq("status", "ACTIVE")
@@ -45,7 +45,7 @@ export async function getEditorData(session: SessionContext, websiteId: string, 
 
   const [{ data: pageRows, error: pageError }, { data: mediaRows, error: mediaError }, { data: logRows, error: logError }] = await Promise.all([
     supabase.from("pages")
-      .select("id, path, draft_title, draft_meta_description, draft_is_indexable, has_unpublished_changes")
+      .select("id, path, draft_title, draft_meta_description, draft_is_indexable, has_unpublished_changes, editor_mode, updated_at")
       .eq("organization_id", session.organizationId).eq("website_id", website.id).order("path"),
     supabase.from("media")
       .select("id, filename, alt_text, storage_path")
@@ -61,6 +61,7 @@ export async function getEditorData(session: SessionContext, websiteId: string, 
   const pages = (pageRows ?? []).map((row) => ({
     id: row.id, path: row.path, title: row.draft_title, metaDescription: row.draft_meta_description ?? "",
     isIndexable: row.draft_is_indexable, hasUnpublishedChanges: row.has_unpublished_changes,
+    editorMode: row.editor_mode as "BLOCKS" | "IMPORTED", updatedAt: row.updated_at,
   }));
   const currentPage = pages.find((page) => page.id === requestedPageId) ?? pages[0] ?? null;
 
@@ -74,7 +75,7 @@ export async function getEditorData(session: SessionContext, websiteId: string, 
   if (currentPage) {
     const [{ data: blockRows, error: blockError }, { data: entryRows, error: entryError }] = await Promise.all([
       supabase.from("page_blocks")
-        .select("id, type, position, draft_config, is_published, has_unpublished_changes")
+        .select("id, type, position, draft_config, is_published, has_unpublished_changes, selector, current_value_draft")
         .eq("organization_id", session.organizationId).eq("website_id", website.id).eq("page_id", currentPage.id)
         .eq("draft_visible", true).order("position"),
       supabase.from("content_entries")
@@ -95,12 +96,13 @@ export async function getEditorData(session: SessionContext, websiteId: string, 
         id: row.id, type: row.type as BlockType, position: row.position,
         config: { ...rawConfig, imageUrl: linkedMedia?.url ?? null, imageAlt: linkedMedia?.altText ?? null },
         entries: entriesByBlock.get(row.id) ?? [], isPublished: row.is_published, hasUnpublishedChanges: row.has_unpublished_changes,
+        selector: row.selector, importedValue: row.current_value_draft as EditorData["blocks"][number]["importedValue"],
       };
     });
   }
 
   return {
-    website: { id: website.id, name: website.name, domain: website.domain, publishedAt: website.published_at, publishAt: website.publish_at },
+    website: { id: website.id, name: website.name, domain: website.domain, publishedAt: website.published_at, publishAt: website.publish_at, sourceMode: website.source_mode as "BLOCKS" | "IMPORTED" },
     pages, currentPage, blocks, media,
     history: (logRows ?? []).map((row) => {
       const changes = row.changes && typeof row.changes === "object" && !Array.isArray(row.changes) ? row.changes as Record<string, unknown> : {};

@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import * as cheerio from "cheerio";
 import sharp from "sharp";
 import { z } from "zod";
 import { getSessionContext } from "@/features/session/context";
@@ -10,6 +11,8 @@ import { can, canEditContent } from "@/lib/authz";
 import { requireFeature } from "@/lib/features";
 import { isSupportedImageMime, mimeForPath } from "@/lib/mime";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { applyImportedSeo, materializeImportedHtml, removeImportedListItem, setImportedListField } from "@/features/site-import/materialize";
+import type { ImportedBlockValue } from "@/features/site-import/parser";
 
 export type EditorActionResult = {
   error?: string;
@@ -49,9 +52,123 @@ async function ownedPage(access: Exclude<Awaited<ReturnType<typeof requireEditor
 
 async function ownedBlock(access: Exclude<Awaited<ReturnType<typeof requireEditor>>, { error: string }>, blockId: string) {
   const { data, error } = await access.supabase.from("page_blocks")
-    .select("id, website_id, page_id, position, type, draft_config")
+    .select("id, website_id, page_id, position, type, draft_config, selector, original_value, current_value_draft, draft_visible")
     .eq("id", blockId).eq("organization_id", access.session.organizationId).maybeSingle();
   return error ? null : data;
+}
+
+async function refreshImportedPage(access: Exclude<Awaited<ReturnType<typeof requireEditor>>, { error: string }>, pageId: string) {
+  const [{ data: page }, { data: blockRows, error: blocksError }] = await Promise.all([
+    access.supabase.from("pages").select("id, website_id, draft_html, editor_mode, draft_title, draft_meta_description, draft_is_indexable")
+      .eq("id", pageId).eq("organization_id", access.session.organizationId).maybeSingle(),
+    access.supabase.from("page_blocks").select("id, type, selector, draft_visible, current_value_draft")
+      .eq("page_id", pageId).eq("organization_id", access.session.organizationId).not("selector", "is", null).order("position"),
+  ]);
+  if (!page || blocksError || page.editor_mode !== "IMPORTED" || !page.draft_html) return null;
+  const materialized = materializeImportedHtml(page.draft_html, (blockRows ?? []).map((block) => ({
+    id: block.id,
+    type: block.type as "html_text" | "html_image" | "html_list",
+    selector: block.selector as string,
+    draftVisible: block.draft_visible,
+    value: block.current_value_draft as ImportedBlockValue,
+  })), true);
+  const rendered = applyImportedSeo(materialized, { title: page.draft_title, description: page.draft_meta_description, indexable: page.draft_is_indexable });
+  const { error } = await access.supabase.from("pages").update({
+    rendered_draft_html: rendered,
+    has_unpublished_changes: true,
+    updated_at: new Date().toISOString(),
+  }).eq("id", page.id).eq("organization_id", access.session.organizationId);
+  return error ? null : { websiteId: page.website_id };
+}
+
+export async function saveImportedBlockDraft(input: { blockId: string; value: string; itemId?: string; fieldId?: string }): Promise<EditorActionResult> {
+  const parsed = z.object({
+    blockId: z.string().uuid(), value: z.string().max(50_000), itemId: z.string().uuid().optional(), fieldId: z.string().uuid().optional(),
+  }).safeParse(input);
+  if (!parsed.success) return { error: "Conteúdo importado inválido." };
+  const access = await requireEditor();
+  if ("error" in access) return access;
+  const block = await ownedBlock(access, parsed.data.blockId);
+  if (!block || !block.selector || !["html_text", "html_list"].includes(block.type)) return { error: "Elemento importado não disponível." };
+  let value: ImportedBlockValue = parsed.data.value;
+  if (block.type === "html_list") {
+    if (!parsed.data.itemId || !parsed.data.fieldId) return { error: "Item de lista inválido." };
+    value = setImportedListField(block.current_value_draft as ImportedBlockValue, parsed.data.itemId, parsed.data.fieldId, parsed.data.value);
+  }
+  const { error } = await access.supabase.from("page_blocks").update({
+    current_value_draft: value,
+    has_unpublished_changes: true,
+    updated_by: access.session.userId,
+    updated_at: new Date().toISOString(),
+  }).eq("id", block.id).eq("organization_id", access.session.organizationId);
+  if (error || !await refreshImportedPage(access, block.page_id)) return { error: "Não foi possível guardar esta alteração." };
+  return { success: "Rascunho guardado." };
+}
+
+export async function removeImportedListItemAction(input: { blockId: string; itemId: string }): Promise<EditorActionResult> {
+  const parsed = z.object({ blockId: z.string().uuid(), itemId: z.string().uuid() }).safeParse(input);
+  if (!parsed.success) return { error: "Item inválido." };
+  const access = await requireEditor();
+  if ("error" in access) return access;
+  const block = await ownedBlock(access, parsed.data.blockId);
+  if (!block?.selector || block.type !== "html_list") return { error: "Lista importada não disponível." };
+  const nextValue = removeImportedListItem(block.current_value_draft as ImportedBlockValue, parsed.data.itemId);
+  const { error } = await access.supabase.from("page_blocks").update({
+    current_value_draft: nextValue, has_unpublished_changes: true, updated_by: access.session.userId, updated_at: new Date().toISOString(),
+  }).eq("id", block.id).eq("organization_id", access.session.organizationId);
+  if (error || !await refreshImportedPage(access, block.page_id)) return { error: "Não foi possível remover o item." };
+  refreshEditor(block.website_id);
+  return { success: "Item removido do rascunho." };
+}
+
+export async function mutateImportedBlock(input: { blockId: string; action: "up" | "down" | "duplicate" | "remove" }): Promise<EditorActionResult> {
+  const parsed = z.object({ blockId: z.string().uuid(), action: z.enum(["up", "down", "duplicate", "remove"]) }).safeParse(input);
+  if (!parsed.success) return { error: "Alteração estrutural inválida." };
+  const access = await requireEditor();
+  if ("error" in access) return access;
+  const block = await ownedBlock(access, parsed.data.blockId);
+  if (!block?.selector || !["html_text", "html_image", "html_list"].includes(block.type)) return { error: "Elemento importado não disponível." };
+  const { data: page } = await access.supabase.from("pages").select("id, draft_html")
+    .eq("id", block.page_id).eq("website_id", block.website_id).eq("organization_id", access.session.organizationId).eq("editor_mode", "IMPORTED").maybeSingle();
+  if (!page?.draft_html) return { error: "Página importada não disponível." };
+  const $ = cheerio.load(page.draft_html);
+  const element = $(block.selector).first();
+  if (!element.length) return { error: "O elemento já não existe no HTML." };
+  if (parsed.data.action === "up" || parsed.data.action === "down") {
+    const sibling = parsed.data.action === "up" ? element.prevAll("[data-linea-block]").first() : element.nextAll("[data-linea-block]").first();
+    if (!sibling.length) return { success: "O elemento já está no limite desta seção." };
+    if (parsed.data.action === "up") sibling.before(element);
+    else sibling.after(element);
+  } else if (parsed.data.action === "remove") {
+    element.remove();
+    await access.supabase.from("page_blocks").update({ draft_visible: false, has_unpublished_changes: true, updated_by: access.session.userId })
+      .eq("id", block.id).eq("organization_id", access.session.organizationId);
+  } else {
+    const newId = randomUUID();
+    const clone = element.clone().attr("data-linea-block", newId);
+    element.after(clone);
+    const { error } = await access.supabase.from("page_blocks").insert({
+      id: newId,
+      organization_id: access.session.organizationId,
+      website_id: block.website_id,
+      page_id: block.page_id,
+      type: block.type,
+      position: block.position + 1,
+      config: {}, draft_config: {}, is_published: false, draft_visible: true, has_unpublished_changes: true,
+      selector: `[data-linea-block="${newId}"]`, attribute_name: block.type === "html_text" ? "textContent" : block.type === "html_image" ? "src" : null,
+      original_value: block.original_value,
+      current_value_draft: block.current_value_draft,
+      current_value_published: null,
+      updated_by: access.session.userId,
+    });
+    if (error) return { error: "Não foi possível duplicar o elemento." };
+  }
+  const draftHtml = $.html();
+  const { error: pageError } = await access.supabase.from("pages").update({ draft_html: draftHtml, has_unpublished_changes: true, updated_at: new Date().toISOString() })
+    .eq("id", page.id).eq("organization_id", access.session.organizationId);
+  if (pageError || !await refreshImportedPage(access, block.page_id)) return { error: "Não foi possível atualizar a estrutura da página." };
+  refreshEditor(block.website_id);
+  return { success: parsed.data.action === "duplicate" ? "Elemento duplicado." : parsed.data.action === "remove" ? "Elemento removido do rascunho." : "Elemento movido." };
 }
 
 function blockDefaults(type: BlockType, isFirst: boolean): { config: BlockConfig; entries: { suffix: string; label: string; value: string; kind: string }[] } {
@@ -175,8 +292,9 @@ export async function savePageSeoDraft(input: { pageId: string; title: string; m
   const { data, error } = await access.supabase.from("pages").update({
     draft_title: parsed.data.title, draft_meta_description: parsed.data.metaDescription || null,
     draft_is_indexable: parsed.data.isIndexable, has_unpublished_changes: true, updated_at: new Date().toISOString(),
-  }).eq("id", parsed.data.pageId).eq("organization_id", access.session.organizationId).select("website_id").maybeSingle();
+  }).eq("id", parsed.data.pageId).eq("organization_id", access.session.organizationId).select("id, website_id, editor_mode").maybeSingle();
   if (error || !data) return { error: "No se pudo guardar la configuración de esta página." };
+  if (data.editor_mode === "IMPORTED" && !await refreshImportedPage(access, data.id)) return { error: "O SEO foi guardado, mas o HTML não pôde ser atualizado." };
   return { success: "Borrador guardado." };
 }
 
@@ -318,6 +436,84 @@ export async function uploadEditorImage(formData: FormData): Promise<EditorActio
   return { success: `Imagen optimizada a WebP (${Math.max(1, Math.round(output.byteLength / 1024))} KB).` };
 }
 
+async function applyImportedImage(
+  access: Exclude<Awaited<ReturnType<typeof requireEditor>>, { error: string }>,
+  blockId: string,
+  media: { id: string; alt_text: string | null },
+  itemId?: string,
+  fieldId?: string,
+) {
+  const block = await ownedBlock(access, blockId);
+  if (!block?.selector || !["html_image", "html_list"].includes(block.type)) return { error: "Imagem importada não disponível." } as const;
+  const src = `/site-media/${block.website_id}/${media.id}`;
+  let nextValue: ImportedBlockValue = { src, alt: media.alt_text ?? "" };
+  if (block.type === "html_list") {
+    if (!itemId || !fieldId) return { error: "Imagem da lista inválida." } as const;
+    nextValue = setImportedListField(block.current_value_draft as ImportedBlockValue, itemId, fieldId, src, media.alt_text ?? "");
+  }
+  const { error } = await access.supabase.from("page_blocks").update({
+    current_value_draft: nextValue, has_unpublished_changes: true,
+    updated_by: access.session.userId, updated_at: new Date().toISOString(),
+  }).eq("id", block.id).eq("organization_id", access.session.organizationId);
+  if (error || !await refreshImportedPage(access, block.page_id)) return { error: "Não foi possível trocar a imagem." } as const;
+  refreshEditor(block.website_id);
+  return { success: "Imagem atualizada no rascunho." } as const;
+}
+
+export async function selectImportedImage(input: { blockId: string; mediaId: string; itemId?: string; fieldId?: string }): Promise<EditorActionResult> {
+  const parsed = z.object({ blockId: z.string().uuid(), mediaId: z.string().uuid(), itemId: z.string().uuid().optional(), fieldId: z.string().uuid().optional() }).safeParse(input);
+  if (!parsed.success) return { error: "Imagem não válida." };
+  const access = await requireEditor();
+  if ("error" in access) return access;
+  const { data: media } = await access.supabase.from("media").select("id, alt_text")
+    .eq("id", parsed.data.mediaId).eq("organization_id", access.session.organizationId).is("deleted_at", null).maybeSingle();
+  if (!media) return { error: "Imagem não disponível nesta organização." };
+  return applyImportedImage(access, parsed.data.blockId, media, parsed.data.itemId, parsed.data.fieldId);
+}
+
+export async function uploadImportedImage(formData: FormData): Promise<EditorActionResult> {
+  const target = z.object({
+    blockId: z.string().uuid(),
+    itemId: z.string().uuid().optional(),
+    fieldId: z.string().uuid().optional(),
+  }).safeParse({
+    blockId: formData.get("blockId"),
+    itemId: formData.get("itemId") || undefined,
+    fieldId: formData.get("fieldId") || undefined,
+  });
+  const file = formData.get("file");
+  const altText = String(formData.get("altText") ?? "").trim().slice(0, 500);
+  if (!target.success || !(file instanceof File)) return { error: "Seleciona uma imagem válida." };
+  const declaredMime = mimeForPath(file.name);
+  if (!declaredMime || !isSupportedImageMime(file.type) || declaredMime !== file.type || file.size <= 0 || file.size > 12 * 1024 * 1024) {
+    return { error: "Usa JPEG, PNG, WebP ou AVIF de até 12 MB." };
+  }
+  const access = await requireEditor();
+  if ("error" in access) return access;
+  const block = await ownedBlock(access, target.data.blockId);
+  if (!block) return { error: "Elemento não disponível." };
+  let output: Buffer;
+  try {
+    output = await sharp(Buffer.from(await file.arrayBuffer())).rotate().resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+  } catch {
+    return { error: "Não foi possível processar esta imagem." };
+  }
+  const storagePath = `${access.session.organizationId}/${randomUUID()}.webp`;
+  const { error: uploadError } = await access.supabase.storage.from("media").upload(storagePath, output, { contentType: "image/webp", upsert: false });
+  if (uploadError) return { error: "Não foi possível guardar a imagem otimizada." };
+  const { data: media, error: mediaError } = await access.supabase.from("media").insert({
+    organization_id: access.session.organizationId, website_id: block.website_id, storage_path: storagePath,
+    filename: `${file.name.replace(/\.[^.]+$/, "").slice(0, 240)}.webp`, mime_type: "image/webp",
+    bytes: output.byteLength, alt_text: altText || null, created_by: access.session.userId,
+  }).select("id, alt_text").single();
+  if (mediaError || !media) {
+    await access.supabase.storage.from("media").remove([storagePath]);
+    return { error: "Não foi possível registrar a imagem otimizada." };
+  }
+  revalidatePath("/media");
+  return applyImportedImage(access, block.id, media, target.data.itemId, target.data.fieldId);
+}
+
 export async function restoreOriginal(websiteId: string): Promise<EditorActionResult> {
   const parsed = z.string().uuid().safeParse(websiteId);
   if (!parsed.success) return { error: "Web no válida." };
@@ -326,13 +522,20 @@ export async function restoreOriginal(websiteId: string): Promise<EditorActionRe
   const { data: website } = await access.supabase.from("websites").select("id").eq("id", parsed.data).eq("organization_id", access.session.organizationId).maybeSingle();
   if (!website) return { error: "Web no disponible." };
   const [{ data: pages }, { data: blocks }, { data: entries }] = await Promise.all([
-    access.supabase.from("pages").select("id, title, meta_description, is_indexable").eq("website_id", website.id).eq("organization_id", access.session.organizationId),
-    access.supabase.from("page_blocks").select("id, config, is_published").eq("website_id", website.id).eq("organization_id", access.session.organizationId),
+    access.supabase.from("pages").select("id, title, meta_description, is_indexable, editor_mode, published_html, published_template_html").eq("website_id", website.id).eq("organization_id", access.session.organizationId),
+    access.supabase.from("page_blocks").select("id, config, is_published, current_value_published").eq("website_id", website.id).eq("organization_id", access.session.organizationId),
     access.supabase.from("content_entries").select("id, value").eq("website_id", website.id).eq("organization_id", access.session.organizationId),
   ]);
   await Promise.all([
-    ...(pages ?? []).map((row) => access.supabase.from("pages").update({ draft_title: row.title, draft_meta_description: row.meta_description, draft_is_indexable: row.is_indexable, has_unpublished_changes: false }).eq("id", row.id).eq("organization_id", access.session.organizationId)),
-    ...(blocks ?? []).map((row) => access.supabase.from("page_blocks").update({ draft_config: row.config, draft_visible: row.is_published, has_unpublished_changes: false, updated_by: access.session.userId }).eq("id", row.id).eq("organization_id", access.session.organizationId)),
+    ...(pages ?? []).map((row) => access.supabase.from("pages").update({
+      draft_title: row.title, draft_meta_description: row.meta_description, draft_is_indexable: row.is_indexable,
+      ...(row.editor_mode === "IMPORTED" ? { draft_html: row.published_template_html, rendered_draft_html: row.published_html } : {}),
+      has_unpublished_changes: false,
+    }).eq("id", row.id).eq("organization_id", access.session.organizationId)),
+    ...(blocks ?? []).map((row) => access.supabase.from("page_blocks").update({
+      draft_config: row.config, draft_visible: row.is_published, current_value_draft: row.current_value_published,
+      has_unpublished_changes: false, updated_by: access.session.userId,
+    }).eq("id", row.id).eq("organization_id", access.session.organizationId)),
     ...(entries ?? []).map((row) => access.supabase.from("content_entries").update({ draft_value: row.value, has_unpublished_changes: false, updated_by: access.session.userId }).eq("id", row.id).eq("organization_id", access.session.organizationId)),
   ]);
   refreshEditor(website.id);
@@ -341,16 +544,24 @@ export async function restoreOriginal(websiteId: string): Promise<EditorActionRe
 
 async function publicationWarnings(access: Exclude<Awaited<ReturnType<typeof requirePublisher>>, { error: string }>, websiteId: string) {
   const [{ data: pages }, { data: blocks }, { data: entries }, { data: media }] = await Promise.all([
-    access.supabase.from("pages").select("id, path, draft_meta_description").eq("website_id", websiteId).eq("organization_id", access.session.organizationId),
+    access.supabase.from("pages").select("id, path, draft_meta_description, editor_mode, rendered_draft_html").eq("website_id", websiteId).eq("organization_id", access.session.organizationId),
     access.supabase.from("page_blocks").select("id, draft_config").eq("website_id", websiteId).eq("organization_id", access.session.organizationId).eq("draft_visible", true),
     access.supabase.from("content_entries").select("block_id, content_key, draft_value").eq("website_id", websiteId).eq("organization_id", access.session.organizationId),
     access.supabase.from("media").select("id, alt_text").eq("website_id", websiteId).eq("organization_id", access.session.organizationId).is("deleted_at", null),
   ]);
   const warnings: string[] = [];
   for (const page of pages ?? []) if (!page.draft_meta_description?.trim()) warnings.push(`${page.path}: falta la meta description.`);
-  const h1Blocks = new Set((blocks ?? []).filter((block) => (block.draft_config as BlockConfig)?.headingLevel === "h1").map((block) => block.id));
-  const h1Pages = new Set((entries ?? []).filter((entry) => h1Blocks.has(entry.block_id) && entry.content_key.endsWith(".heading") && textValue(entry.draft_value).trim()).map((entry) => entry.block_id));
-  if (h1Blocks.size === 0 || h1Pages.size === 0) warnings.push("Falta un H1 con contenido.");
+  const importedPages = (pages ?? []).filter((page) => page.editor_mode === "IMPORTED");
+  for (const page of importedPages) {
+    const $ = cheerio.load(page.rendered_draft_html ?? "");
+    if (!$("h1").first().text().trim()) warnings.push(`${page.path}: falta um H1 com conteúdo.`);
+    $("img").each((_, image) => { if (!$(image).attr("alt")?.trim()) warnings.push(`${page.path}: há uma imagem sem texto alternativo.`); });
+  }
+  if (importedPages.length === 0) {
+    const h1Blocks = new Set((blocks ?? []).filter((block) => (block.draft_config as BlockConfig)?.headingLevel === "h1").map((block) => block.id));
+    const h1Pages = new Set((entries ?? []).filter((entry) => h1Blocks.has(entry.block_id) && entry.content_key.endsWith(".heading") && textValue(entry.draft_value).trim()).map((entry) => entry.block_id));
+    if (h1Blocks.size === 0 || h1Pages.size === 0) warnings.push("Falta un H1 con contenido.");
+  }
   const mediaById = new Map((media ?? []).map((item) => [item.id, item.alt_text]));
   for (const block of blocks ?? []) {
     const imageId = (block.draft_config as BlockConfig)?.imageId;

@@ -27,6 +27,7 @@ As principais tabelas possuem RLS:
 - organizations
 - organization_members
 - websites
+- site_imports / site_files (ZIP original e índice de assets privados)
 - pages
 - content_entries
 - media
@@ -51,7 +52,10 @@ O `site_key` identifica o website. Como aparece no browser, não é considerado 
 
 ## Conteúdo
 
-Clientes editam registros estruturados (`content_key` + `value`) em vez de HTML ou layout. Isso preserva a arquitetura visual do site.
+Sites importados preservam o HTML original e guardam uma cópia anotada para o
+canvas. Cada nó editável tem valor original, rascunho e publicado. A publicação
+materializa esses valores no HTML e remove as anotações. O modelo estruturado
+anterior continua disponível apenas para sites criados do zero.
 
 ## Mídia
 
@@ -61,6 +65,7 @@ Uploads:
 - tipos MIME permitidos: JPEG, PNG, WebP e AVIF;
 - limite de 15 MB;
 - RLS no `storage.objects`;
+- bucket privado `sites` para ZIPs e assets importados;
 - registro correspondente em `public.media`.
 
 ## Billing

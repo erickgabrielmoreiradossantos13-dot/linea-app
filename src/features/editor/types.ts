@@ -1,6 +1,7 @@
 import type { Role } from "@/lib/types";
+import type { ImportedBlockValue } from "@/features/site-import/parser";
 
-export type BlockType = "text" | "image_text" | "cards" | "cta";
+export type BlockType = "text" | "image_text" | "cards" | "cta" | "html_text" | "html_image" | "html_list";
 
 export type CardItem = { id: string; title: string; body: string };
 
@@ -31,6 +32,8 @@ export type EditorBlock = {
   entries: EditorEntry[];
   isPublished: boolean;
   hasUnpublishedChanges: boolean;
+  selector: string | null;
+  importedValue: ImportedBlockValue | null;
 };
 
 export type EditorPage = {
@@ -40,6 +43,8 @@ export type EditorPage = {
   metaDescription: string;
   isIndexable: boolean;
   hasUnpublishedChanges: boolean;
+  editorMode: "BLOCKS" | "IMPORTED";
+  updatedAt: string;
 };
 
 export type EditorMedia = {
@@ -64,6 +69,7 @@ export type EditorData = {
     domain: string;
     publishedAt: string | null;
     publishAt: string | null;
+    sourceMode: "BLOCKS" | "IMPORTED";
   };
   pages: EditorPage[];
   currentPage: EditorPage | null;

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const migration = ["0001_foundation.sql", "0002_production_rls_hardening.sql", "0003_product_readiness.sql", "0004_visual_site_editor.sql", "0005_scheduled_site_publications.sql"]
+const migration = ["0001_foundation.sql", "0002_production_rls_hardening.sql", "0003_product_readiness.sql", "0004_visual_site_editor.sql", "0005_scheduled_site_publications.sql", "0006_imported_site_editor.sql"]
   .map((file) => readFileSync(join(process.cwd(), "supabase/migrations", file), "utf8"))
   .join("\n");
 
@@ -63,5 +63,16 @@ describe("database security invariants", () => {
     expect(migration).toContain("run_due_site_publications");
     expect(migration).toContain("revoke all on function public.run_due_site_publications() from public, anon, authenticated;");
     expect(migration).toContain("linea-site-publisher");
+  });
+
+  it("keeps imported sites private at rest and scoped by organization", () => {
+    for (const table of ["site_imports", "site_files"]) {
+      expect(migration).toContain(`alter table public.${table} enable row level security;`);
+    }
+    expect(migration).toContain("values ('sites', 'sites', false");
+    expect(migration).toContain('"site_objects_insert"');
+    expect(migration).toContain("replace_website_import");
+    expect(migration).toContain("current_value_published is distinct from old.current_value_published");
+    expect(migration).toContain("published_html is distinct from old.published_html");
   });
 });

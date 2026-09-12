@@ -78,6 +78,25 @@ secciones viven en `page_blocks.draft_config`. La versión publicada continúa e
 `content_entries.value` y `page_blocks.config` hasta que un OWNER o ADMIN pulsa
 **Publicar**.
 
+### Sites reais importados por ZIP
+
+O caminho principal da versão 0.6 é **Mi web → Importar o site real**. O browser
+envia o ZIP diretamente ao bucket privado `sites`, evitando passar arquivos
+grandes pelo servidor da aplicação. No servidor, Cheerio e JSZip:
+
+1. preservam o HTML recebido em `pages.original_html`;
+2. reescrevem referências relativas para o proxy seguro `/site-assets/...`;
+3. marcam textos, imagens e listas repetidas numa cópia de trabalho;
+4. criam um `page_blocks` por nó com valor original, rascunho e publicado;
+5. mostram o documento real num iframe isolado e editável por clique;
+6. materializam os valores publicados no HTML e removem todos os marcadores
+   antes de responder em `/sites/{websiteId}/{path}`.
+
+O HTML e CSS não são convertidos em componentes nem trocados por um template
+Línea. Scripts do ZIP rodam dentro de sandbox para não herdarem a sessão da
+aplicação. Sem ZIP, o construtor genérico continua disponível como fallback ao
+criar a primeira página.
+
 Cada publicación guarda un snapshot en `site_versions` y lo referencia desde
 `site_change_log`, de modo que una versión anterior puede recuperarse como
 borrador y revisarse antes de volver a publicar. EDITOR puede preparar y

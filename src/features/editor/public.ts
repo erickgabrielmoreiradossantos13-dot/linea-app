@@ -46,7 +46,7 @@ export async function getPublishedPage(websiteId: string, path: string): Promise
   }
   const blocks = (blockRows ?? []).map((row, index) => {
     const config = configs[index]; const image = config.imageId ? mediaById.get(config.imageId) : undefined;
-    return { id: row.id, type: row.type as BlockType, position: row.position, config: { ...config, imageUrl: image?.url ?? null, imageAlt: image?.alt ?? null }, entries: entriesByBlock.get(row.id) ?? [], isPublished: true, hasUnpublishedChanges: false };
+    return { id: row.id, type: row.type as BlockType, position: row.position, config: { ...config, imageUrl: image?.url ?? null, imageAlt: image?.alt ?? null }, entries: entriesByBlock.get(row.id) ?? [], isPublished: true, hasUnpublishedChanges: false, selector: null, importedValue: null };
   });
   return { websiteId: website.id, websiteName: website.name, title: page.title, description: page.meta_description, indexable: page.is_indexable, blocks };
 }
