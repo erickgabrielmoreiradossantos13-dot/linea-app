@@ -133,7 +133,7 @@ declare
 begin
   select organization_id into target_org from public.websites where id = target_website and status = 'ACTIVE';
   if target_org is null then raise exception 'website_not_found'; end if;
-  if not public.has_org_role(target_org, array['OWNER','ADMIN']::public.organization_role[]) then
+  if auth.role() <> 'service_role' and not public.has_org_role(target_org, array['OWNER','ADMIN']::public.organization_role[]) then
     raise exception 'import_requires_admin';
   end if;
   if not exists (
@@ -182,7 +182,7 @@ end;
 $$;
 
 revoke all on function public.replace_website_import(uuid, uuid, jsonb, jsonb) from public;
-grant execute on function public.replace_website_import(uuid, uuid, jsonb, jsonb) to authenticated;
+grant execute on function public.replace_website_import(uuid, uuid, jsonb, jsonb) to authenticated, service_role;
 
 create or replace function public.enforce_visual_editor_publish_role()
 returns trigger
